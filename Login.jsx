@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { T } from "./tokens.js";
-import { store } from "./helpers.js";
-import { Ic } from "./Icon.jsx";
-import { Field, Btn } from "./UI.jsx";
+import { T } from "../utils/tokens.js";
+import { Ic } from "../components/Icon.jsx";
+import { Field, Btn } from "../components/UI.jsx";
 
 export function Login({ onLogin }) {
   const [email,   setEmail]   = useState("");
@@ -11,16 +10,16 @@ export function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [showPw,  setShowPw]  = useState(false);
 
-  const handle = e => {
+  const handle = async e => {
     e.preventDefault();
     setLoading(true);
     setErr("");
-    setTimeout(() => {
-      const users = store.get("go_users", []);
-      const u = users.find(u => u.email === email && u.password === pw && u.ativo);
-      if (u) onLogin(u);
-      else { setErr("E-mail ou senha incorretos."); setLoading(false); }
-    }, 500);
+    try {
+      await onLogin(email, pw);
+    } catch (ex) {
+      setErr(ex.message || "E-mail ou senha incorretos.");
+      setLoading(false);
+    }
   };
 
   const demos = [
@@ -32,12 +31,10 @@ export function Login({ onLogin }) {
 
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(145deg,#0f172a 0%,#1e1b4b 50%,#1a0533 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", overflow:"hidden" }}>
-      {/* Background orbs */}
       <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%)", top:-100, right:-100, pointerEvents:"none" }} />
       <div style={{ position:"absolute", width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%)", bottom:-100, left:-100, pointerEvents:"none" }} />
 
       <div style={{ display:"flex", flexDirection:"column", gap:24, width:"100%", maxWidth:420, animation:"fadeIn 0.4s ease both" }}>
-        {/* Card */}
         <div style={{ background:"rgba(255,255,255,0.97)", borderRadius:24, padding:"40px 36px 32px", boxShadow:"0 40px 100px rgba(0,0,0,0.4)" }}>
           <div style={{ textAlign:"center", marginBottom:36 }}>
             <div style={{ width:64, height:64, background:"linear-gradient(135deg,#6366f1,#8b5cf6)", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px", boxShadow:"0 8px 24px rgba(99,102,241,0.4)" }}>
@@ -64,20 +61,16 @@ export function Login({ onLogin }) {
           </form>
         </div>
 
-        {/* Quick access demo */}
         <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:16, padding:"18px 20px", backdropFilter:"blur(10px)" }}>
           <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>
             Acesso rápido — demonstração
           </p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {demos.map(d => (
-              <button
-                key={d.label}
-                onClick={() => { setEmail(d.email); setPw(d.pw); }}
+              <button key={d.label} onClick={() => { setEmail(d.email); setPw(d.pw); }}
                 style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:600, color:"rgba(255,255,255,0.8)", cursor:"pointer", transition:"all 0.15s", fontFamily:"inherit" }}
                 onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-                onMouseOut={e  => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-              >
+                onMouseOut={e  => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}>
                 {d.label}
               </button>
             ))}

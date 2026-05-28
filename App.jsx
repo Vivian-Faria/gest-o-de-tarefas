@@ -1,15 +1,32 @@
-import { useState, useEffect } from "react";
-import { GlobalStyles }    from "./GlobalStyles.jsx";
-import { Sidebar }         from "./Sidebar.jsx";
-import { ToastContainer }  from "./UI.jsx";
-import { useToast }        from "./useToast.js";
-import { store, initStorage } from "./helpers.js";
-import { BONUS_RULES }     from "./tokens.js";
+import { useState, useEffect, useCallback } from "react";
+import { GlobalStyles }    from "./components/GlobalStyles.jsx";
+import { Sidebar }         from "./components/Sidebar.jsx";
+import { ToastContainer }  from "./components/UI.jsx";
+import { useToast }        from "./hooks/useToast.js";
+import { BONUS_RULES }     from "./utils/tokens.js";
+import { initStorage }     from "./utils/helpers.js";
+import {
+  loginUser, logoutUser,
+  fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
+  upsertUser, upsertTask, insertExecucao, saveBonusRules,
+  USE_SUPABASE,
+} from "./lib/dataService.js";
 
-import { Login }           from "./Login.jsx";
-import { AdminDashboard }  from "./AdminDashboard.jsx";
-import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./AdminPages.jsx";
-import { MinhasTarefas, MeuDesempenho } from "./ColaboradorPages.jsx";
+import { Login }           from "./pages/Login.jsx";
+import { AdminDashboard }  from "./pages/AdminDashboard.jsx";
+import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./pages/AdminPages.jsx";
+import { MinhasTarefas, MeuDesempenho } from "./pages/ColaboradorPages.jsx";
+
+// ─── LOADING SCREEN ───────────────────────────────────────────
+function Loading() {
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#0f172a", gap:16 }}>
+      <div style={{ width:48, height:48, border:"3px solid rgba(99,102,241,0.3)", borderTopColor:"#6366f1", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/>
+      <p style={{ color:"#94a3b8", fontSize:14, fontWeight:600 }}>Carregando dados…</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
 
 export default function App() {
   const [user,       setUser]       = useState(null);
@@ -21,48 +38,74 @@ export default function App() {
   const [loading,    setLoading]    = useState(true);
   const { toasts, toast, remove }   = useToast();
 
-  useEffect(() => {
-    let alive = true;
-
-    initStorage()
-      .then(data => {
-        if (!alive) return;
-        setUsers(data.users);
-        setTasks(data.tasks);
-        setExecutions(data.executions);
-        setBonusRules(data.bonusRules);
-      })
-      .catch(err => {
-        console.error("Erro ao carregar dados:", err);
-        if (!alive) return;
-        setUsers(store.get("go_users", []));
-        setTasks(store.get("go_tasks", []));
-        setExecutions(store.get("go_execs", []));
-        setBonusRules(store.get("go_bonus", BONUS_RULES));
-      })
-      .finally(() => alive && setLoading(false));
-
-    return () => { alive = false; };
+  // ─── LOAD DATA ──────────────────────────────────────────────
+  const loadAll = useCallback(async () => {
+    if (!USE_SUPABASE) initStorage();
+    const [u, t, e, b] = await Promise.all([
+      fetchUsers(),
+      fetchTasks(),
+      fetchExecucoes(),
+      fetchBonusRules(),
+    ]);
+    setUsers(u);
+    setTasks(t);
+    setExecutions(e);
+    setBonusRules(b.length ? b : BONUS_RULES);
   }, []);
 
-  const login  = (u) => { setUser(u); setActive(u.role === "admin" ? "dashboard" : "minhas-tarefas"); };
-  const logout = ()  => { setUser(null); setActive(null); };
+  useEffect(() => {
+    loadAll().finally(() => setLoading(false));
+  }, [loadAll]);
 
-  if (loading) {
-    return (
-      <>
-        <GlobalStyles />
-        <div className="app-loading">
-          <div className="app-loading-spinner" />
-          <span>Carregando dados...</span>
-        </div>
-      </>
-    );
-  }
+  // ─── AUTH ───────────────────────────────────────────────────
+  const login = useCallback(async (email, password) => {
+    const u = await loginUser(email, password);
+    setUser(u);
+    setActive(u.role === "admin" ? "dashboard" : "minhas-tarefas");
+  }, []);
 
-  if (!user) return <><GlobalStyles /><Login onLogin={login} /></>;
+  const logout = useCallback(async () => {
+    await logoutUser();
+    setUser(null);
+    setActive(null);
+  }, []);
 
-  const shared = { users, setUsers, tasks, setTasks, executions, setExecutions, bonusRules, setBonusRules, user, toast };
+  // ─── PERSISTÊNCIA: wrappers que atualizam estado + DB ────────
+  const handleSetUsers = useCallback(async (updated, userToSave) => {
+    setUsers(updated);
+    if (userToSave) await upsertUser(userToSave).catch(console.error);
+  }, []);
+
+  const handleSetTasks = useCallback(async (updated, taskToSave) => {
+    setTasks(updated);
+    if (taskToSave) await upsertTask(taskToSave).catch(console.error);
+  }, []);
+
+  const handleSetExecutions = useCallback(async (updated, execToSave) => {
+    setExecutions(updated);
+    if (execToSave) await insertExecucao(execToSave).catch(console.error);
+  }, []);
+
+  const handleSetBonusRules = useCallback(async (rules) => {
+    setBonusRules(rules);
+    await saveBonusRules(rules).catch(console.error);
+  }, []);
+
+  if (loading) return <><GlobalStyles /><Loading /></>;
+  if (!user)   return <><GlobalStyles /><Login onLogin={login} /></>;
+
+  const shared = {
+    users,
+    tasks,
+    executions,
+    bonusRules,
+    user,
+    toast,
+    setUsers:      (upd, toSave) => handleSetUsers(upd, toSave),
+    setTasks:      (upd, toSave) => handleSetTasks(upd, toSave),
+    setExecutions: (upd, toSave) => handleSetExecutions(upd, toSave),
+    setBonusRules: handleSetBonusRules,
+  };
 
   const pages = {
     "dashboard":       <AdminDashboard {...shared} />,
@@ -78,12 +121,9 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
-      <div className="app-shell" style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
+      <div style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
         <Sidebar user={user} active={active} setActive={setActive} onLogout={logout} />
-        <main
-          className="main-content"
-          style={{ flex:1, padding:"32px 36px", overflowY:"auto", minHeight:"100vh", maxHeight:"100vh" }}
-        >
+        <main className="main-content" style={{ flex:1, padding:"32px 36px", overflowY:"auto", minHeight:"100vh", maxHeight:"100vh" }}>
           {pages[active] || <div style={{ color:"#94a3b8", padding:40 }}>Selecione uma opção no menu</div>}
         </main>
       </div>

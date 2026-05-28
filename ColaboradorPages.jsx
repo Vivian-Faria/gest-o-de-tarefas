@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { T, CAT_COLORS } from "./tokens.js";
-import { store, todayStr, fmtDateLong, statusColor, calcPerf, getBonus, getLast7Days, monthLabel } from "./helpers.js";
-import { Ic } from "./Icon.jsx";
-import { Avatar, Chip, StatusChip, ProgressRing, StatCard, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
+import { T, CAT_COLORS } from "../utils/tokens.js";
+import { store, todayStr, fmtDateLong, statusColor, calcPerf, getBonus, getLast7Days, monthLabel } from "../utils/helpers.js";
+import { Ic } from "../components/Icon.jsx";
+import { Avatar, Chip, StatusChip, ProgressRing, StatCard, Page, Modal, Field, Btn, Empty } from "../components/UI.jsx";
 
 // ─── MINHAS TAREFAS ───────────────────────────────────────────────────────────
 export function MinhasTarefas({ user, tasks, executions, setExecutions, toast }) {
@@ -16,9 +16,11 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
   const todayExecs = executions.filter(e => e.userId === user.id && e.date === todayStr());
   const getExec   = id => todayExecs.find(e => e.taskId === id);
 
-  const done    = todayExecs.filter(e => e.status === "concluida").length;
-  const pct     = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
-  const pending = myTasks.filter(t => !getExec(t.id)).length;
+  const done        = todayExecs.filter(e => e.status === "concluida").length;
+  const pct         = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
+  const pending     = myTasks.filter(t => !getExec(t.id)).length;
+  // Banner só aparece quando TODAS as tarefas foram concluídas com sucesso (não apenas registradas)
+  const allDone     = myTasks.length > 0 && myTasks.every(t => getExec(t.id)?.status === "concluida");
 
   const openExec = task => {
     if (getExec(task.id)) return;
@@ -62,10 +64,16 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
             <div style={{ height:"100%", width:`${pct}%`, background:"linear-gradient(90deg,#818cf8,#a78bfa)", borderRadius:3, transition:"width 0.8s ease" }}/>
           </div>
         </div>
-        {pending === 0 && myTasks.length > 0 && (
+        {allDone && (
           <div style={{ background:"rgba(16,185,129,0.2)", border:"1px solid rgba(16,185,129,0.4)", borderRadius:14, padding:"12px 20px", textAlign:"center" }}>
             <div style={{ fontSize:24 }}>🎉</div>
             <div style={{ fontSize:12, fontWeight:700, color:"#6ee7b7", marginTop:4 }}>Todas concluídas!</div>
+          </div>
+        )}
+        {!allDone && pending === 0 && myTasks.length > 0 && (
+          <div style={{ background:"rgba(251,191,36,0.15)", border:"1px solid rgba(251,191,36,0.35)", borderRadius:14, padding:"12px 20px", textAlign:"center" }}>
+            <div style={{ fontSize:24 }}>📋</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"#fcd34d", marginTop:4 }}>Tudo registrado</div>
           </div>
         )}
       </div>
