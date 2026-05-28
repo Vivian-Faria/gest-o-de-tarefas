@@ -65,6 +65,12 @@ export default function App() {
   }, [loadAll]);
 
   // ─── AUTH ───────────────────────────────────────────────────
+  // Recarrega todos os dados do banco (útil para sincronizar mobile/desktop)
+  const reloadAll = useCallback(async () => {
+    setLoading(true);
+    try { await loadAll(); } finally { setLoading(false); }
+  }, [loadAll]);
+
   const login = useCallback(async (email, password) => {
     const u = await loginUser(email, password);
     setUser(u);
@@ -138,6 +144,7 @@ export default function App() {
     bonusRules,
     user,
     toast,
+    reloadAll,
     setUsers:      (upd, toSave) => handleSetUsers(upd, toSave),
     setTasks:      (upd, toSave) => handleSetTasks(upd, toSave),
     setExecutions: (upd, toSave) => handleSetExecutions(upd, toSave),
@@ -160,7 +167,7 @@ export default function App() {
       <GlobalStyles />
       <div style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
         <Sidebar user={user} active={active} setActive={setActive} onLogout={logout} />
-        <BottomNav user={user} active={active} setActive={setActive} onLogout={logout} />
+        <BottomNav user={user} active={active} setActive={setActive} onLogout={logout} onSync={reloadAll} />
         <main className="main-content" style={{ flex:1, padding:"32px 36px", overflowY:"auto", minHeight:"100vh", maxHeight:"100vh" }}>
           {/* Banner de aviso sem banco — visível especialmente no mobile */}
           {!USE_SUPABASE && (

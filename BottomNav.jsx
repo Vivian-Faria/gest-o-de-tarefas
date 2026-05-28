@@ -14,7 +14,7 @@ const USER_NAV = [
   { id:"meu-desempenho", icon:"chart", label:"Desempenho" },
 ];
 
-export function BottomNav({ user, active, setActive, onLogout }) {
+export function BottomNav({ user, active, setActive, onLogout, onSync }) {
   const isAdmin = user.role === "admin";
   const nav = isAdmin ? ADMIN_NAV : USER_NAV;
 
@@ -46,6 +46,19 @@ export function BottomNav({ user, active, setActive, onLogout }) {
           </button>
         );
       })}
+      {onSync && (
+        <button onClick={onSync}
+          style={{
+            flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+            gap:3, padding:"6px 4px", border:"none",
+            background:"transparent", color:T.sky[400],
+            cursor:"pointer", fontFamily:"inherit",
+            borderTop:"2px solid transparent",
+          }}>
+          <Ic n="refresh" s={20} c={T.sky[400]} />
+          <span style={{ fontSize:9, fontWeight:500, letterSpacing:0.3 }}>Sincronizar</span>
+        </button>
+      )}
       <button onClick={onLogout}
         style={{
           flex:1, display:"flex", flexDirection:"column", alignItems:"center",
