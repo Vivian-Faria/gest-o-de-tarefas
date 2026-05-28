@@ -124,6 +124,16 @@ export default function App() {
       <div style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
         <Sidebar user={user} active={active} setActive={setActive} onLogout={logout} />
         <main className="main-content" style={{ flex:1, padding:"32px 36px", overflowY:"auto", minHeight:"100vh", maxHeight:"100vh" }}>
+          {/* Banner de aviso sem banco — visível especialmente no mobile */}
+          {!USE_SUPABASE && (
+            <div style={{ display:"flex", alignItems:"center", gap:10, background:"#fffbeb", border:"1px solid #fde68a", borderRadius:12, padding:"10px 14px", marginBottom:20, fontSize:12 }}>
+              <span style={{ fontSize:16 }}>⚠️</span>
+              <div>
+                <strong style={{ color:"#92400e" }}>Dados locais — sem sincronização</strong>
+                <span style={{ color:"#b45309", marginLeft:6 }}>Mobile e desktop têm bases separadas até o Supabase ser configurado.</span>
+              </div>
+            </div>
+          )}
           {pages[active] || <div style={{ color:"#94a3b8", padding:40 }}>Selecione uma opção no menu</div>}
         </main>
       </div>

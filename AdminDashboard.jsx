@@ -1,29 +1,53 @@
-import { T } from "./tokens.js";
-import { calcPerf, getBonus, statusColor, getMonthRange, getLast7Days, monthLabel } from "./helpers.js";
-import { Ic } from "./Icon.jsx";
-import { Avatar, Chip, ProgressRing, StatCard, Page } from "./UI.jsx";
+import { T } from "../utils/tokens.js";
+import { calcPerf, getBonus, statusColor, getMonthRange, getLast7Days, monthLabel } from "../utils/helpers.js";
+import { Ic } from "../components/Icon.jsx";
+import { Avatar, Chip, ProgressRing, StatCard, Page } from "../components/UI.jsx";
+import { USE_SUPABASE } from "../lib/dataService.js";
 
 export function AdminDashboard({ users, tasks, executions, bonusRules }) {
   const colabs = users.filter(u => u.role === "colaborador" && u.ativo);
   const { first, last } = getMonthRange(0);
-  const monthExecs  = executions.filter(e => e.date >= first && e.date <= last);
-  const totalConcl  = monthExecs.filter(e => e.status === "concluida").length;
-  const totalNao    = monthExecs.filter(e => e.status === "nao_concluida").length;
-  const totalPoss   = tasks.filter(t => t.ativo).length * colabs.length;
-  const taxa        = totalPoss > 0 ? Math.round((totalConcl / totalPoss) * 100) : 0;
+  const monthExecs = executions.filter(e => e.date >= first && e.date <= last);
+  const totalConcl = monthExecs.filter(e => e.status === "concluida").length;
+  const totalNao   = monthExecs.filter(e => e.status === "nao_concluida").length;
 
-  const days7     = getLast7Days();
-  const chartData = days7.map(d => ({ d, v: executions.filter(e => e.date === d && e.status === "concluida").length }));
-
+  // Taxa correta: soma dos pontos obtidos ÷ soma dos pontos possíveis de todos os colaboradores
   const ranking = colabs.map(u => {
     const p = calcPerf(u.id, executions, tasks);
     return { ...u, ...p, bonus: getBonus(p.index, bonusRules) };
   }).sort((a, b) => b.index - a.index);
 
+  const totalObtidos  = ranking.reduce((s, u) => s + u.obtidos,  0);
+  const totalPossiveis = ranking.reduce((s, u) => s + u.possiveis, 0);
+  const taxa = totalPossiveis > 0 ? Math.round((totalObtidos / totalPossiveis) * 100) : 0;
+
+  const days7     = getLast7Days();
+  const chartData = days7.map(d => ({
+    d,
+    v: executions.filter(e => e.date === d && e.status === "concluida").length,
+  }));
+
   const medals = ["🥇","🥈","🥉"];
 
   return (
     <Page title="Dashboard" sub={`Visão geral · ${monthLabel()}`}>
+
+      {/* Aviso quando sem banco de dados */}
+      {!USE_SUPABASE && (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:12, background:"#fffbeb", border:"1px solid #fde68a", borderRadius:12, padding:"12px 16px", marginBottom:20 }}>
+          <Ic n="alert_tri" s={18} c={T.amber[500]} />
+          <div>
+            <p style={{ fontSize:13, fontWeight:700, color:T.amber[600], marginBottom:2 }}>
+              Dados salvos apenas neste navegador
+            </p>
+            <p style={{ fontSize:12, color:T.amber[600] }}>
+              Mobile e desktop têm dados separados porque o banco de dados (Supabase) ainda não foi configurado.
+              Siga o <strong>SUPABASE_SETUP.md</strong> para sincronizar todos os dispositivos.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="stat-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:16, marginBottom:28 }}>
         <StatCard label="Taxa de Execução"   value={`${taxa}%`}    icon="chart"  color={T.indigo[500]}  sub="Mês atual" chart={chartData} />

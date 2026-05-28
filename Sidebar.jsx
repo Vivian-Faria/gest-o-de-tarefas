@@ -1,6 +1,7 @@
-import { T } from "./tokens.js";
+import { T } from "../utils/tokens.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar } from "./UI.jsx";
+import { USE_SUPABASE } from "../lib/dataService.js";
 
 const ADMIN_NAV = [
   { id:"dashboard",     label:"Dashboard",      icon:"grid"     },
@@ -36,22 +37,34 @@ export function Sidebar({ user, active, setActive, onLogout }) {
         </div>
       </div>
 
+      {/* Aviso sem banco */}
+      {!USE_SUPABASE && (
+        <div className="sidebar-logo-text" style={{ margin:"10px 10px 0", background:"rgba(251,191,36,0.12)", border:"1px solid rgba(251,191,36,0.25)", borderRadius:10, padding:"8px 10px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+            <Ic n="alert_tri" s={12} c={T.amber[400]} />
+            <span style={{ fontSize:10, fontWeight:800, color:T.amber[400], letterSpacing:0.3 }}>SEM BANCO DE DADOS</span>
+          </div>
+          <p style={{ fontSize:10, color:"rgba(251,191,36,0.7)", lineHeight:1.4 }}>
+            Dados isolados por dispositivo. Configure o Supabase para sincronizar.
+          </p>
+        </div>
+      )}
+
       {/* Section label */}
-      <div style={{ padding:"18px 18px 6px" }}>
+      <div style={{ padding:"14px 18px 6px" }}>
         <p className="sidebar-label" style={{ fontSize:10, fontWeight:700, color:T.slate[600], letterSpacing:1.2, textTransform:"uppercase" }}>
           {isAdmin ? "Gestão" : "Colaborador"}
         </p>
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar-nav" style={{ padding:"0 10px", flex:1, overflowY:"auto" }}>
+      <nav style={{ padding:"0 10px", flex:1, overflowY:"auto" }}>
         {nav.map(item => {
           const isActive = active === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActive(item.id)}
-              aria-label={item.label}
               className="nav-item"
               style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:10, border:"none", cursor:"pointer", background:isActive?"rgba(99,102,241,0.2)":"transparent", color:isActive?"#a5b4fc":T.slate[400], fontSize:13, fontWeight:isActive?700:500, marginBottom:2, textAlign:"left", fontFamily:"inherit", borderLeft:isActive?"3px solid #818cf8":"3px solid transparent", transition:"all 0.15s" }}
             >
