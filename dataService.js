@@ -1,9 +1,3 @@
-/**
- * dataService.js
- * Camada de acesso a dados.
- * Usa Supabase quando as variáveis de ambiente estão configuradas.
- * Faz fallback para localStorage em dev sem .env.
- */
 import { supabase } from "./supabase.js";
 import { store, initStorage } from "./helpers.js";
 
@@ -12,28 +6,83 @@ const USE_SUPABASE = !!(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function handleError(label, error) {
   console.error(`[dataService] ${label}:`, error?.message ?? error);
-  throw error;
+  throw new Error(error?.message ?? error);
+}
+
+// ─── CONVERSORES camelCase ↔ snake_case ───────────────────────────────────────
+
+function taskToRow(t) {
+  return {
+    id:               t.id,
+    nome:             t.nome,
+    descricao:        t.descricao ?? null,
+    categoria:        t.categoria,
+    horario:          t.horario,
+    frequencia:       t.frequencia,
+    tempo_estimado:   t.tempoEstimado,
+    peso:             t.peso,
+    foto_obrigatoria: t.fotoObrigatoria,
+    responsavel_id:   t.responsavelId ?? null,
+    ativo:            t.ativo,
+  };
+}
+
+function rowToTask(r) {
+  return {
+    id:              r.id,
+    nome:            r.nome,
+    descricao:       r.descricao,
+    categoria:       r.categoria,
+    horario:         r.horario,
+    frequencia:      r.frequencia,
+    tempoEstimado:   r.tempo_estimado,
+    peso:            r.peso,
+    fotoObrigatoria: r.foto_obrigatoria,
+    responsavelId:   r.responsavel_id,
+    ativo:           r.ativo,
+  };
+}
+
+function execToRow(e) {
+  return {
+    id:         e.id,
+    task_id:    e.taskId,
+    user_id:    e.userId,
+    date:       e.date,
+    timestamp:  e.timestamp,
+    status:     e.status,
+    observacao: e.observacao ?? null,
+    photo_url:  e.photo ?? null,
+  };
+}
+
+function rowToExec(r) {
+  return {
+    id:         r.id,
+    taskId:     r.task_id,
+    userId:     r.user_id,
+    date:       r.date,
+    timestamp:  r.timestamp,
+    status:     r.status,
+    observacao: r.observacao,
+    photo:      r.photo_url,
+  };
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 export async function loginUser(email, password) {
   if (!USE_SUPABASE) {
-    // fallback localStorage
     initStorage();
     const users = store.get("go_users", []);
     const u = users.find(u => u.email === email && u.password === password && u.ativo);
     if (!u) throw new Error("E-mail ou senha incorretos.");
     return u;
   }
-
-  // Supabase Auth
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw new Error("E-mail ou senha incorretos.");
 
-  // Busca perfil do usuário na tabela `usuarios`
   const { data: profile, error: pe } = await supabase
     .from("usuarios")
     .select("*")
@@ -76,20 +125,22 @@ export async function fetchUsers() {
 export async function upsertUser(user) {
   if (!USE_SUPABASE) {
     const all = store.get("go_users", []);
-    const exists = all.find(u => u.id === user.id);
-    const updated = exists
+    const updated = all.find(u => u.id === user.id)
       ? all.map(u => u.id === user.id ? user : u)
       : [...all, user];
     store.set("go_users", updated);
     return user;
   }
+  // Usuários usam snake_case já igual ao app exceto auth_id que não enviamos no upsert
+  const { id, auth_id, created_at, ...rest } = user;
   const { data, error } = await supabase
     .from("usuarios")
-    .upsert(user, { onConflict: "id" })
+    .update(rest)
+    .eq("id", user.id)
     .select()
-    .single();
+    .maybeSingle();
   if (error) handleError("upsertUser", error);
-  return data;
+  return data ?? user;
 }
 
 // ─── TAREFAS ──────────────────────────────────────────────────────────────────
@@ -97,44 +148,37 @@ export async function fetchTasks() {
   if (!USE_SUPABASE) return store.get("go_tasks", []);
   const { data, error } = await supabase.from("tarefas").select("*").order("horario");
   if (error) handleError("fetchTasks", error);
-  return data;
+  return (data ?? []).map(rowToTask);
 }
 
 export async function upsertTask(task) {
   if (!USE_SUPABASE) {
     const all = store.get("go_tasks", []);
-    const exists = all.find(t => t.id === task.id);
-    const updated = exists
+    const updated = all.find(t => t.id === task.id)
       ? all.map(t => t.id === task.id ? task : t)
       : [...all, task];
     store.set("go_tasks", updated);
     return task;
   }
+  const row = taskToRow(task);
   const { data, error } = await supabase
     .from("tarefas")
-    .upsert(task, { onConflict: "id" })
+    .upsert(row, { onConflict: "id" })
     .select()
-    .single();
+    .maybeSingle();
   if (error) handleError("upsertTask", error);
-  return data;
+  return data ? rowToTask(data) : task;
 }
 
 // ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
-export async function fetchExecucoes(filters = {}) {
-  if (!USE_SUPABASE) {
-    let all = store.get("go_execs", []);
-    if (filters.userId) all = all.filter(e => e.userId === filters.userId);
-    if (filters.date)   all = all.filter(e => e.date   === filters.date);
-    return all;
-  }
-  let query = supabase.from("execucoes").select("*").order("timestamp", { ascending: false });
-  if (filters.userId) query = query.eq("user_id", filters.userId);
-  if (filters.date)   query = query.eq("date", filters.date);
-  if (filters.from)   query = query.gte("date", filters.from);
-  if (filters.to)     query = query.lte("date", filters.to);
-  const { data, error } = await query;
+export async function fetchExecucoes() {
+  if (!USE_SUPABASE) return store.get("go_execs", []);
+  const { data, error } = await supabase
+    .from("execucoes")
+    .select("*")
+    .order("timestamp", { ascending: false });
   if (error) handleError("fetchExecucoes", error);
-  return data;
+  return (data ?? []).map(rowToExec);
 }
 
 export async function insertExecucao(exec) {
@@ -143,47 +187,34 @@ export async function insertExecucao(exec) {
     store.set("go_execs", all);
     return exec;
   }
-  // Mapeia campos camelCase → snake_case do banco
-  const row = {
-    id:          exec.id,
-    task_id:     exec.taskId,
-    user_id:     exec.userId,
-    date:        exec.date,
-    timestamp:   exec.timestamp,
-    status:      exec.status,
-    observacao:  exec.observacao ?? null,
-    photo_url:   exec.photo ?? null,   // no Supabase storage seria uma URL; aqui guardamos base64 em dev
-  };
-  const { data, error } = await supabase.from("execucoes").insert(row).select().single();
+  const row = execToRow(exec);
+  const { data, error } = await supabase
+    .from("execucoes")
+    .insert(row)
+    .select()
+    .maybeSingle();
   if (error) handleError("insertExecucao", error);
-  // Retorna no formato camelCase que o app usa
-  return {
-    id:          data.id,
-    taskId:      data.task_id,
-    userId:      data.user_id,
-    date:        data.date,
-    timestamp:   data.timestamp,
-    status:      data.status,
-    observacao:  data.observacao,
-    photo:       data.photo_url,
-  };
+  return data ? rowToExec(data) : exec;
 }
 
 // ─── BÔNUS ────────────────────────────────────────────────────────────────────
 export async function fetchBonusRules() {
   if (!USE_SUPABASE) return store.get("go_bonus", []);
-  const { data, error } = await supabase.from("bonus_rules").select("*").order("min", { ascending: false });
+  const { data, error } = await supabase
+    .from("bonus_rules")
+    .select("*")
+    .order("min", { ascending: false });
   if (error) handleError("fetchBonusRules", error);
-  return data;
+  return data ?? [];
 }
 
 export async function saveBonusRules(rules) {
   if (!USE_SUPABASE) { store.set("go_bonus", rules); return rules; }
-  // Deleta tudo e reinseresupport com upsert
   await supabase.from("bonus_rules").delete().neq("id", 0);
-  const { data, error } = await supabase.from("bonus_rules").insert(rules).select();
+  const rows = rules.map(({ id, ...r }) => r); // remove id serial para reinserir
+  const { data, error } = await supabase.from("bonus_rules").insert(rows).select();
   if (error) handleError("saveBonusRules", error);
-  return data;
+  return data ?? rules;
 }
 
 export { USE_SUPABASE };

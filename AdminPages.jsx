@@ -27,12 +27,14 @@ export function Colaboradores({ users, setUsers, toast }) {
       upd = [...users, { ...form, id:"u"+Date.now(), avatar:initials(form.name) }];
       toast("Colaborador cadastrado");
     }
-    store.set("go_users", upd); setUsers(upd); setModal(false);
+    const userToSave = editing ? { ...form, id:editing.id, avatar:initials(form.name) } : upd[upd.length-1];
+    setUsers(upd, userToSave); setModal(false);
   };
 
   const toggle = id => {
     const upd = users.map(u => u.id === id ? { ...u, ativo:!u.ativo } : u);
-    store.set("go_users", upd); setUsers(upd);
+    const changed = upd.find(u => u.id === id);
+    setUsers(upd, changed);
     const u = upd.find(u => u.id === id);
     toast(`${u.name} ${u.ativo ? "ativado" : "desativado"}`);
   };
@@ -112,12 +114,14 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
       upd = [...tasks, { ...form, id:"t"+Date.now() }];
       toast("Tarefa criada");
     }
-    store.set("go_tasks", upd); setTasks(upd); setModal(false);
+    const taskToSave = editing ? { ...form, id:editing.id } : upd[upd.length-1];
+    setTasks(upd, taskToSave); setModal(false);
   };
 
   const toggle = id => {
     const upd = tasks.map(t => t.id === id ? { ...t, ativo:!t.ativo } : t);
-    store.set("go_tasks", upd); setTasks(upd);
+    const changed = upd.find(t => t.id === id);
+    setTasks(upd, changed);
   };
 
   return (
