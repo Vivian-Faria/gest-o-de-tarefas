@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { GlobalStyles }    from "./GlobalStyles.jsx";
 import { Sidebar }         from "./Sidebar.jsx";
+import { BottomNav }      from "./BottomNav.jsx";
 import { ToastContainer }  from "./UI.jsx";
 import { useToast }        from "./useToast.js";
 import { BONUS_RULES }     from "./tokens.js";
@@ -159,6 +160,7 @@ export default function App() {
       <GlobalStyles />
       <div style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
         <Sidebar user={user} active={active} setActive={setActive} onLogout={logout} />
+        <BottomNav user={user} active={active} setActive={setActive} onLogout={logout} />
         <main className="main-content" style={{ flex:1, padding:"32px 36px", overflowY:"auto", minHeight:"100vh", maxHeight:"100vh" }}>
           {/* Banner de aviso sem banco — visível especialmente no mobile */}
           {!USE_SUPABASE && (

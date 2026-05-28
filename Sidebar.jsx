@@ -22,7 +22,7 @@ export function Sidebar({ user, active, setActive, onLogout }) {
   const nav = isAdmin ? ADMIN_NAV : USER_NAV;
 
   return (
-    <aside className="sidebar" style={{ width:228, background:T.slate[900], display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0, flexShrink:0, borderRight:"1px solid rgba(255,255,255,0.05)" }}>
+    <aside className="sidebar sidebar-desktop" style={{ width:228, background:T.slate[900], display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0, flexShrink:0, borderRight:"1px solid rgba(255,255,255,0.05)" }}>
 
       {/* Logo */}
       <div style={{ padding:"22px 18px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>

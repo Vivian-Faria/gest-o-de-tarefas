@@ -90,13 +90,13 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
             <div key={t.id} onClick={() => openExec(t)} className={exec ? "" : "card-hover"} style={{ background:"#fff", border:`1.5px solid ${ok?T.emerald[200]:nok?T.rose[200]:T.slate[100]}`, borderRadius:16, padding:"18px 20px", cursor:exec?"default":"pointer", position:"relative", overflow:"hidden", transition:"all 0.15s" }}>
               {ok  && <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,${T.emerald[400]},${T.emerald[300]})` }}/>}
               {nok && <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,${T.rose[400]},${T.rose[300]})` }}/>}
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              <div className="task-card-inner" style={{ display:"flex", alignItems:"center", gap:14 }}>
                 <div style={{ width:48, height:48, borderRadius:14, background:ok?T.emerald[50]:nok?T.rose[50]:cc.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   {ok  ? <Ic n="check" s={22} c={T.emerald[500]} sw={2.5}/> : nok ? <Ic n="x" s={22} c={T.rose[500]} sw={2.5}/> : <Ic n="clock" s={22} c={cc.text}/>}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontWeight:800, fontSize:15, color:T.slate[800], marginBottom:6 }}>{t.nome}</div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  <div className="task-card-chips" style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     <Chip color={cc.text} bg={cc.bg} dot>{t.categoria}</Chip>
                     <Chip color={T.slate[500]} bg={T.slate[50]}><Ic n="clock" s={10} c={T.slate[400]}/>&nbsp;{t.horario}</Chip>
                     <Chip color={T.indigo[600]} bg={T.indigo[50]}>{t.peso} pts</Chip>
@@ -104,7 +104,7 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
                   </div>
                   {exec?.observacao && <p style={{ fontSize:12, color:T.slate[500], marginTop:6, fontStyle:"italic" }}>{exec.observacao}</p>}
                 </div>
-                <div style={{ flexShrink:0 }}>
+                <div className="task-card-btn" style={{ flexShrink:0, display:"flex", justifyContent:"flex-end" }}>
                   {!exec && (
                     <div style={{ background:T.indigo[500], color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
                       <Ic n="chevron_right" s={14} c="#fff"/>Registrar
