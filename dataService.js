@@ -17,14 +17,14 @@ function taskToRow(t) {
   return {
     id:               t.id,
     nome:             t.nome,
-    descricao:        t.descricao ?? null,
+    descricao:        t.descricao || null,
     categoria:        t.categoria,
     horario:          t.horario,
     frequencia:       t.frequencia,
     tempo_estimado:   t.tempoEstimado,
     peso:             t.peso,
     foto_obrigatoria: t.fotoObrigatoria,
-    responsavel_id:   t.responsavelId ?? null,
+    responsavel_id:   t.responsavelId || null,  // || null converte "" para null
     ativo:            t.ativo,
   };
 }
