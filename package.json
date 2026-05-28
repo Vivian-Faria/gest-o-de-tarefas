@@ -1,0 +1,21 @@
+{
+  "name": "gestao-operacional",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de Gestão Operacional e Desempenho de Colaboradores",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
