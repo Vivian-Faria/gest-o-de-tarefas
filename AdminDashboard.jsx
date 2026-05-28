@@ -1,8 +1,8 @@
-import { T } from "../utils/tokens.js";
-import { calcPerf, getBonus, statusColor, getMonthRange, getLast7Days, monthLabel } from "../utils/helpers.js";
-import { Ic } from "../components/Icon.jsx";
-import { Avatar, Chip, ProgressRing, StatCard, Page } from "../components/UI.jsx";
-import { USE_SUPABASE } from "../lib/dataService.js";
+import { T } from "./tokens.js";
+import { calcPerf, getBonus, statusColor, getMonthRange, getLast7Days, monthLabel } from "./helpers.js";
+import { Ic } from "./Icon.jsx";
+import { Avatar, Chip, ProgressRing, StatCard, Page } from "./UI.jsx";
+import { USE_SUPABASE } from "./dataService.js";
 
 export function AdminDashboard({ users, tasks, executions, bonusRules }) {
   const colabs = users.filter(u => u.role === "colaborador" && u.ativo);

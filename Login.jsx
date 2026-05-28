@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { T } from "../utils/tokens.js";
-import { Ic } from "../components/Icon.jsx";
-import { Field, Btn } from "../components/UI.jsx";
+import { T } from "./tokens.js";
+import { Ic } from "./Icon.jsx";
+import { Field, Btn } from "./UI.jsx";
 
 export function Login({ onLogin }) {
   const [email,   setEmail]   = useState("");

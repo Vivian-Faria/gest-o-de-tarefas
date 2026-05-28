@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { T, CAT_COLORS } from "../utils/tokens.js";
-import { store, todayStr, fmtDateLong, statusColor, calcPerf, getBonus, getLast7Days, monthLabel } from "../utils/helpers.js";
-import { Ic } from "../components/Icon.jsx";
-import { Avatar, Chip, StatusChip, ProgressRing, StatCard, Page, Modal, Field, Btn, Empty } from "../components/UI.jsx";
+import { T, CAT_COLORS } from "./tokens.js";
+import { store, todayStr, fmtDateLong, statusColor, calcPerf, getBonus, getLast7Days, monthLabel } from "./helpers.js";
+import { Ic } from "./Icon.jsx";
+import { Avatar, Chip, StatusChip, ProgressRing, StatCard, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
 
 // ─── MINHAS TAREFAS ───────────────────────────────────────────────────────────
 export function MinhasTarefas({ user, tasks, executions, setExecutions, toast }) {

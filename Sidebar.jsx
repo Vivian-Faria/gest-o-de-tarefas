@@ -1,7 +1,7 @@
-import { T } from "../utils/tokens.js";
+import { T } from "./tokens.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar } from "./UI.jsx";
-import { USE_SUPABASE } from "../lib/dataService.js";
+import { USE_SUPABASE } from "./dataService.js";
 
 const ADMIN_NAV = [
   { id:"dashboard",     label:"Dashboard",      icon:"grid"     },
