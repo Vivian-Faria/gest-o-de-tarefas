@@ -45,6 +45,10 @@ export function GlobalStyles() {
         .stat-grid       { grid-template-columns: 1fr 1fr !important; }
         .ranking-row     { flex-wrap: wrap; gap: 8px !important; }
       }
+    /* Modal responsivo */
+    @media (max-width: 600px) {
+        .modal-grid-2col { grid-template-columns: 1fr !important; }
+      }
     `}</style>
   );
 }

@@ -99,8 +99,8 @@ export function Modal({ open, onClose, title, children, width = 500 }) {
   }, [open]);
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(15,23,42,0.6)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16, backdropFilter:"blur(4px)" }} onClick={onClose}>
-      <div className="card-enter" style={{ background:"#fff", borderRadius:20, padding:"28px 28px 24px", width:"100%", maxWidth:width, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 32px 80px rgba(0,0,0,0.22)" }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(15,23,42,0.6)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:"12px", backdropFilter:"blur(4px)" }} onClick={onClose}>
+      <div className="card-enter" style={{ background:"#fff", borderRadius:16, padding:"24px 20px 20px", width:"100%", maxWidth:width, maxHeight:"94vh", overflowY:"auto", boxShadow:"0 32px 80px rgba(0,0,0,0.22)", boxSizing:"border-box" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
           <h3 style={{ fontSize:17, fontWeight:800, color:T.slate[800] }}>{title}</h3>
           <button onClick={onClose} style={{ background:T.slate[100], border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.15s" }} onMouseOver={e => e.currentTarget.style.background=T.slate[200]} onMouseOut={e => e.currentTarget.style.background=T.slate[100]}>

@@ -66,7 +66,7 @@ export function Colaboradores({ users, setUsers, toast }) {
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Editar Colaborador" : "Novo Colaborador"}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
+        <div className="modal-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
           <div style={{ gridColumn:"1/-1" }}><Field label="Nome completo" value={form.name} onChange={f("name")} required /></div>
           <div style={{ gridColumn:"1/-1" }}><Field label="E-mail" type="email" value={form.email} onChange={f("email")} required /></div>
           {!editing && <div style={{ gridColumn:"1/-1" }}><Field label="Senha" type="password" value={form.password} onChange={f("password")} required /></div>}
@@ -182,7 +182,7 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
       <Modal open={modal} onClose={() => setModal(false)} title={editing?"Editar Tarefa":"Nova Tarefa"} width={540}>
         <Field label="Nome da tarefa" value={form.nome} onChange={f("nome")} required />
         <Field label="Descrição" type="textarea" value={form.descricao} onChange={f("descricao")} placeholder="Descreva o procedimento..." />
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
+        <div className="modal-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
           <Field label="Categoria"           value={form.categoria}      onChange={f("categoria")}      options={CAT_OPTS} />
           <Field label="Horário sugerido"    type="time"                  value={form.horario}           onChange={f("horario")} />
           <Field label="Frequência"          value={form.frequencia}     onChange={f("frequencia")}     options={FREQ_OPTS} />

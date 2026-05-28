@@ -79,23 +79,52 @@ export default function App() {
   // ─── PERSISTÊNCIA: wrappers que atualizam estado + DB ────────
   const handleSetUsers = useCallback(async (updated, userToSave) => {
     setUsers(updated);
-    if (userToSave) await upsertUser(userToSave).catch(console.error);
-  }, []);
+    if (userToSave) {
+      try {
+        await upsertUser(userToSave);
+      } catch(e) {
+        console.error("upsertUser error:", e);
+        toast("Erro ao salvar colaborador: " + (e?.message ?? e), "error");
+        fetchUsers().then(u => setUsers(u)).catch(()=>{});
+      }
+    }
+  }, [toast]);
 
   const handleSetTasks = useCallback(async (updated, taskToSave) => {
     setTasks(updated);
-    if (taskToSave) await upsertTask(taskToSave).catch(console.error);
-  }, []);
+    if (taskToSave) {
+      try {
+        await upsertTask(taskToSave);
+      } catch(e) {
+        console.error("upsertTask error:", e);
+        toast("Erro ao salvar tarefa: " + (e?.message ?? e), "error");
+        // Recarrega do banco para não ficar com estado inconsistente
+        fetchTasks().then(t => setTasks(t)).catch(()=>{});
+      }
+    }
+  }, [toast]);
 
   const handleSetExecutions = useCallback(async (updated, execToSave) => {
     setExecutions(updated);
-    if (execToSave) await insertExecucao(execToSave).catch(console.error);
-  }, []);
+    if (execToSave) {
+      try {
+        await insertExecucao(execToSave);
+      } catch(e) {
+        console.error("insertExecucao error:", e);
+        toast("Erro ao registrar execução: " + (e?.message ?? e), "error");
+        fetchExecucoes().then(e => setExecutions(e)).catch(()=>{});
+      }
+    }
+  }, [toast]);
 
   const handleSetBonusRules = useCallback(async (rules) => {
     setBonusRules(rules);
-    await saveBonusRules(rules).catch(console.error);
-  }, []);
+    try {
+      await saveBonusRules(rules);
+    } catch(e) {
+      toast("Erro ao salvar configurações: " + (e?.message ?? e), "error");
+    }
+  }, [toast]);
 
   if (isReset) return <><GlobalStyles /><ResetPassword onDone={() => { setIsReset(false); window.location.hash = ""; }} /></>;
   if (loading) return <><GlobalStyles /><Loading /></>;
