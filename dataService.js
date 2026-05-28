@@ -38,8 +38,20 @@ export async function loginUser(email, password) {
     .from("usuarios")
     .select("*")
     .eq("auth_id", data.user.id)
-    .single();
-  if (pe) handleError("loginUser/profile", pe);
+    .maybeSingle();
+
+  if (pe) {
+    await supabase.auth.signOut();
+    throw new Error("Erro ao buscar perfil: " + pe.message);
+  }
+  if (!profile) {
+    await supabase.auth.signOut();
+    throw new Error("Usuário não encontrado no sistema. Contate o administrador.");
+  }
+  if (!profile.ativo) {
+    await supabase.auth.signOut();
+    throw new Error("Usuário inativo. Contate o administrador.");
+  }
   return profile;
 }
 
