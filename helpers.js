@@ -1,46 +1,19 @@
 import { SEED_USERS, SEED_TASKS, BONUS_RULES } from "./tokens.js";
-import { hasRemoteDb, loadRemoteState, saveRemoteValue } from "./database.js";
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
 export const store = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set: (k, v) => {
-    setLocal(k, v);
-    saveRemoteValue(k, v).catch(err => console.error("Erro ao salvar no banco:", err));
-  },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
-function setLocal(k, v) {
-  try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
-}
-
-export async function initStorage() {
+export function initStorage() {
   if (!store.get("go_v2")) {
-    setLocal("go_users", SEED_USERS);
-    setLocal("go_tasks", SEED_TASKS);
-    setLocal("go_execs", []);
-    setLocal("go_bonus", BONUS_RULES);
-    setLocal("go_v2", true);
+    store.set("go_users", SEED_USERS);
+    store.set("go_tasks", SEED_TASKS);
+    store.set("go_execs", []);
+    store.set("go_bonus", BONUS_RULES);
+    store.set("go_v2",    true);
   }
-
-  const state = {
-    go_users: store.get("go_users", SEED_USERS),
-    go_tasks: store.get("go_tasks", SEED_TASKS),
-    go_execs: store.get("go_execs", []),
-    go_bonus: store.get("go_bonus", BONUS_RULES),
-  };
-
-  const syncedState = hasRemoteDb ? await loadRemoteState(state) : state;
-
-  Object.entries(syncedState).forEach(([key, value]) => setLocal(key, value));
-
-  return {
-    users: syncedState.go_users,
-    tasks: syncedState.go_tasks,
-    executions: syncedState.go_execs,
-    bonusRules: syncedState.go_bonus,
-    isRemote: hasRemoteDb,
-  };
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────────────────────

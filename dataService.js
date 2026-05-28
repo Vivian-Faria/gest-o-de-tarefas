@@ -5,7 +5,7 @@
  * Faz fallback para localStorage em dev sem .env.
  */
 import { supabase } from "./supabase.js";
-import { store, initStorage } from "../utils/helpers.js";
+import { store, initStorage } from "./helpers.js";
 
 const USE_SUPABASE = !!(
   import.meta.env.VITE_SUPABASE_URL &&
