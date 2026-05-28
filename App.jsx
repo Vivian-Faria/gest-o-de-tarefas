@@ -16,6 +16,7 @@ import { Login }           from "./Login.jsx";
 import { AdminDashboard }  from "./AdminDashboard.jsx";
 import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./AdminPages.jsx";
 import { MinhasTarefas, MeuDesempenho } from "./ColaboradorPages.jsx";
+import { ResetPassword } from "./ResetPassword.jsx";
 
 // ─── LOADING SCREEN ───────────────────────────────────────────
 function Loading() {
@@ -90,6 +91,11 @@ export default function App() {
     setBonusRules(rules);
     await saveBonusRules(rules).catch(console.error);
   }, []);
+
+  // Detecta link de redefinição de senha do Supabase
+  const isReset = typeof window !== "undefined" &&
+    (window.location.hash.includes("type=recovery") || window.location.hash.includes("access_token"));
+  if (isReset) return <><GlobalStyles /><ResetPassword onDone={() => { window.location.hash = ""; window.location.reload(); }} /></>;
 
   if (loading) return <><GlobalStyles /><Loading /></>;
   if (!user)   return <><GlobalStyles /><Login onLogin={login} /></>;
