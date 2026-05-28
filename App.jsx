@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { GlobalStyles }    from "./components/GlobalStyles.jsx";
-import { Sidebar }         from "./components/Sidebar.jsx";
-import { ToastContainer }  from "./components/UI.jsx";
-import { useToast }        from "./hooks/useToast.js";
-import { store, initStorage } from "./utils/helpers.js";
-import { BONUS_RULES }     from "./utils/tokens.js";
+import { GlobalStyles }    from "./GlobalStyles.jsx";
+import { Sidebar }         from "./Sidebar.jsx";
+import { ToastContainer }  from "./UI.jsx";
+import { useToast }        from "./useToast.js";
+import { store, initStorage } from "./helpers.js";
+import { BONUS_RULES }     from "./tokens.js";
 
-import { Login }           from "./pages/Login.jsx";
-import { AdminDashboard }  from "./pages/AdminDashboard.jsx";
-import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./pages/AdminPages.jsx";
-import { MinhasTarefas, MeuDesempenho } from "./pages/ColaboradorPages.jsx";
+import { Login }           from "./Login.jsx";
+import { AdminDashboard }  from "./AdminDashboard.jsx";
+import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./AdminPages.jsx";
+import { MinhasTarefas, MeuDesempenho } from "./ColaboradorPages.jsx";
 
 export default function App() {
   const [user,       setUser]       = useState(null);

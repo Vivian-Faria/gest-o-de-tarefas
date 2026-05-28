@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { T } from "../utils/tokens.js";
-import { statusColor, statusLabel } from "../utils/helpers.js";
+import { T } from "./tokens.js";
+import { statusColor, statusLabel } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
 
 // ─── AVATAR ───────────────────────────────────────────────────────────────────

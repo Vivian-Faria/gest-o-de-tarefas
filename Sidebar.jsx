@@ -1,4 +1,4 @@
-import { T } from "../utils/tokens.js";
+import { T } from "./tokens.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar } from "./UI.jsx";
 

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { T, CAT_COLORS } from "../utils/tokens.js";
-import { store, initials, fmtDate, fmtTime, calcPerf, getBonus, statusColor, getMonthRange, monthLabel, todayStr } from "../utils/helpers.js";
-import { Ic } from "../components/Icon.jsx";
-import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "../components/UI.jsx";
+import { T, CAT_COLORS } from "./tokens.js";
+import { store, initials, fmtDate, fmtTime, calcPerf, getBonus, statusColor, getMonthRange, monthLabel, todayStr } from "./helpers.js";
+import { Ic } from "./Icon.jsx";
+import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
 export function Colaboradores({ users, setUsers, toast }) {
