@@ -18,18 +18,47 @@ export default function App() {
   const [tasks,      setTasks]      = useState([]);
   const [executions, setExecutions] = useState([]);
   const [bonusRules, setBonusRules] = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const { toasts, toast, remove }   = useToast();
 
   useEffect(() => {
-    initStorage();
-    setUsers(store.get("go_users", []));
-    setTasks(store.get("go_tasks", []));
-    setExecutions(store.get("go_execs", []));
-    setBonusRules(store.get("go_bonus", BONUS_RULES));
+    let alive = true;
+
+    initStorage()
+      .then(data => {
+        if (!alive) return;
+        setUsers(data.users);
+        setTasks(data.tasks);
+        setExecutions(data.executions);
+        setBonusRules(data.bonusRules);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar dados:", err);
+        if (!alive) return;
+        setUsers(store.get("go_users", []));
+        setTasks(store.get("go_tasks", []));
+        setExecutions(store.get("go_execs", []));
+        setBonusRules(store.get("go_bonus", BONUS_RULES));
+      })
+      .finally(() => alive && setLoading(false));
+
+    return () => { alive = false; };
   }, []);
 
   const login  = (u) => { setUser(u); setActive(u.role === "admin" ? "dashboard" : "minhas-tarefas"); };
   const logout = ()  => { setUser(null); setActive(null); };
+
+  if (loading) {
+    return (
+      <>
+        <GlobalStyles />
+        <div className="app-loading">
+          <div className="app-loading-spinner" />
+          <span>Carregando dados...</span>
+        </div>
+      </>
+    );
+  }
 
   if (!user) return <><GlobalStyles /><Login onLogin={login} /></>;
 
@@ -49,7 +78,7 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
-      <div style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
+      <div className="app-shell" style={{ display:"flex", minHeight:"100vh", background:"#f1f5f9" }}>
         <Sidebar user={user} active={active} setActive={setActive} onLogout={logout} />
         <main
           className="main-content"

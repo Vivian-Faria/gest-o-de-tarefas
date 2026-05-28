@@ -99,8 +99,8 @@ export function Modal({ open, onClose, title, children, width = 500 }) {
   }, [open]);
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16, backdropFilter:"blur(4px)" }} onClick={onClose}>
-      <div className="card-enter" style={{ background:"#fff", borderRadius:20, padding:"28px 28px 24px", width:"100%", maxWidth:width, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 32px 80px rgba(0,0,0,0.22)" }} onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16, backdropFilter:"blur(4px)" }} onClick={onClose}>
+      <div className="card-enter modal-panel" style={{ background:"#fff", borderRadius:20, padding:"28px 28px 24px", width:"100%", maxWidth:width, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 32px 80px rgba(0,0,0,0.22)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
           <h3 style={{ fontSize:17, fontWeight:800, color:T.slate[800] }}>{title}</h3>
           <button onClick={onClose} style={{ background:T.slate[100], border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.15s" }} onMouseOver={e => e.currentTarget.style.background=T.slate[200]} onMouseOut={e => e.currentTarget.style.background=T.slate[100]}>
@@ -175,7 +175,7 @@ export function Btn({ children, onClick, variant = "primary", size = "md", disab
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 export function ToastContainer({ toasts, remove }) {
   return (
-    <div style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", gap:10, maxWidth:340 }}>
+    <div className="toast-container" style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", gap:10, maxWidth:340 }}>
       {toasts.map(t => (
         <div key={t.id} style={{ background:"#fff", border:`1px solid ${t.type==="success"?T.emerald[200]:t.type==="error"?T.rose[200]:T.slate[200]}`, borderLeft:`4px solid ${t.type==="success"?T.emerald[500]:t.type==="error"?T.rose[500]:T.indigo[500]}`, borderRadius:12, padding:"12px 16px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", animation:"toastIn 0.25s ease both" }}>
           <Ic n={t.type==="success"?"check":t.type==="error"?"alert_tri":"info"} s={18} c={t.type==="success"?T.emerald[500]:t.type==="error"?T.rose[500]:T.indigo[500]} />
@@ -205,8 +205,8 @@ export function Empty({ icon = "filter", title = "Nenhum resultado", sub = "Tent
 // ─── PAGE WRAPPER ─────────────────────────────────────────────────────────────
 export function Page({ title, sub, action, children }) {
   return (
-    <div className="page-enter" style={{ maxWidth:1100, margin:"0 auto" }}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 }}>
+    <div className="page-enter page-wrap" style={{ maxWidth:1100, margin:"0 auto" }}>
+      <div className="page-head" style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 }}>
         <div>
           <h2 style={{ fontSize:24, fontWeight:900, color:T.slate[800], letterSpacing:-0.5, marginBottom:4 }}>{title}</h2>
           {sub && <p style={{ fontSize:14, color:T.slate[400] }}>{sub}</p>}

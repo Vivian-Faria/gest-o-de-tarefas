@@ -1,29 +1,6 @@
-# GestãoOp — Sistema de Gestão Operacional
+# GestãoOp - Sistema de Gestão Operacional
 
-MVP React + Vite com localStorage. Pronto para migrar para Supabase ou Firebase.
-
-## Estrutura
-
-```
-src/
-├── App.jsx                     # Root component + roteamento de páginas
-├── main.jsx                    # Entry point React
-├── components/
-│   ├── GlobalStyles.jsx        # CSS global + animações + responsivo
-│   ├── Icon.jsx                # Ícones SVG inline (Ic)
-│   ├── Sidebar.jsx             # Navegação lateral
-│   └── UI.jsx                  # Primitivos: Avatar, Chip, Modal, Field, Btn, Toast, etc.
-├── hooks/
-│   └── useToast.js             # Hook de notificações
-├── pages/
-│   ├── Login.jsx               # Tela de login
-│   ├── AdminDashboard.jsx      # Dashboard gerencial
-│   ├── AdminPages.jsx          # Colaboradores, Tarefas, Execuções, Relatórios, Config
-│   └── ColaboradorPages.jsx    # Minhas Tarefas, Meu Desempenho
-└── utils/
-    ├── tokens.js               # Design tokens, seed data, cores por categoria
-    └── helpers.js              # Store (localStorage), datas, cálculo de desempenho
-```
+Aplicação React + Vite para gestão de tarefas operacionais, colaboradores, execuções, relatórios e bonificações.
 
 ## Instalação
 
@@ -32,22 +9,48 @@ npm install
 npm run dev
 ```
 
-## Contas demo
+## Build
 
-| Perfil       | E-mail                   | Senha     |
-|--------------|--------------------------|-----------|
-| Admin        | admin@empresa.com        | admin123  |
-| Colaborador  | carlos@empresa.com       | 123456    |
-| Colaborador  | ana@empresa.com          | 123456    |
-| Colaborador  | roberto@empresa.com      | 123456    |
+```bash
+npm run build
+```
 
-## Próximos passos
+## Banco de dados
 
-- [ ] Substituir `localStorage` por **Supabase** (PostgreSQL + Auth + Storage)
-- [ ] Upload de fotos para **Supabase Storage** ou **Firebase Storage**
-- [ ] Notificações push via **Service Worker** (PWA)
-- [ ] `manifest.json` + ícones para instalação no celular
-- [ ] Sistema de advertências
-- [ ] Ranking entre unidades
-- [ ] Avaliação comportamental
-- [ ] Armazenamento de POPs/planos de ação por tarefa
+O app usa Supabase quando as variáveis de ambiente estão configuradas. Sem elas, continua funcionando com armazenamento local no navegador.
+
+1. Crie um projeto no Supabase.
+2. Execute o SQL de [supabase.schema.sql](./supabase.schema.sql) no SQL Editor do Supabase.
+3. Copie [.env.example](./.env.example) para `.env`.
+4. Preencha:
+
+```bash
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anon-publica
+```
+
+5. Reinicie o servidor com `npm run dev`.
+
+Observação: esta primeira integração sincroniza o estado do sistema em uma tabela `app_state`. Para produção com múltiplos perfis, o próximo passo recomendado é migrar para tabelas relacionais e autenticação real via Supabase Auth.
+
+## Contas Demo
+
+| Perfil | E-mail | Senha |
+| --- | --- | --- |
+| Admin | admin@empresa.com | admin123 |
+| Colaborador | carlos@empresa.com | 123456 |
+| Colaborador | ana@empresa.com | 123456 |
+| Colaborador | roberto@empresa.com | 123456 |
+
+## Estrutura
+
+Os arquivos principais ficam na raiz do projeto:
+
+- `App.jsx`: componente raiz e navegação entre páginas
+- `AdminDashboard.jsx`: painel gerencial
+- `AdminPages.jsx`: colaboradores, tarefas, execuções, relatórios e configurações
+- `ColaboradorPages.jsx`: tarefas e desempenho do colaborador
+- `database.js`: conexão e sincronização com Supabase
+- `helpers.js`: armazenamento local, datas e cálculos
+- `GlobalStyles.jsx`: estilos globais e responsividade
+- `UI.jsx`: componentes visuais reutilizáveis

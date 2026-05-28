@@ -44,13 +44,14 @@ export function Sidebar({ user, active, setActive, onLogout }) {
       </div>
 
       {/* Navigation */}
-      <nav style={{ padding:"0 10px", flex:1, overflowY:"auto" }}>
+      <nav className="sidebar-nav" style={{ padding:"0 10px", flex:1, overflowY:"auto" }}>
         {nav.map(item => {
           const isActive = active === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActive(item.id)}
+              aria-label={item.label}
               className="nav-item"
               style={{ width:"100%", display:"flex", alignItems:"center", gap:11, padding:"10px 12px", borderRadius:10, border:"none", cursor:"pointer", background:isActive?"rgba(99,102,241,0.2)":"transparent", color:isActive?"#a5b4fc":T.slate[400], fontSize:13, fontWeight:isActive?700:500, marginBottom:2, textAlign:"left", fontFamily:"inherit", borderLeft:isActive?"3px solid #818cf8":"3px solid transparent", transition:"all 0.15s" }}
             >
