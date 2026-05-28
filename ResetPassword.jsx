@@ -5,29 +5,35 @@ import { Ic } from "./Icon.jsx";
 import { Field, Btn } from "./UI.jsx";
 
 export function ResetPassword({ onDone }) {
-  const [password,  setPassword]  = useState("");
-  const [confirm,   setConfirm]   = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
-  const [success,   setSuccess]   = useState(false);
-  const [showPw,    setShowPw]    = useState(false);
-  const [ready,     setReady]     = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm,  setConfirm]  = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
+  const [success,  setSuccess]  = useState(false);
+  const [showPw,   setShowPw]   = useState(false);
+  const [ready,    setReady]    = useState(false);
 
-  // Supabase envia o token na hash da URL: #access_token=...&type=recovery
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery") || hash.includes("access_token")) {
-      // Deixa o supabase processar a sessão a partir da URL
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) setReady(true);
-        else {
-          // Tenta trocar o token da hash por sessão
-          supabase.auth.exchangeCodeForSession(window.location.href).catch(() => {});
+    // Extrai os parâmetros do hash da URL
+    // Formato: #access_token=XXX&refresh_token=YYY&type=recovery
+    const hash = window.location.hash.slice(1); // remove o #
+    const params = new URLSearchParams(hash);
+    const accessToken  = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    if (accessToken && refreshToken) {
+      // Estabelece a sessão com o token do link de recovery
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ error }) => {
+          if (error) setError("Link inválido ou expirado. Solicite um novo.");
           setReady(true);
-        }
-      });
+        });
     } else {
-      setReady(true);
+      // Tenta pegar sessão existente
+      supabase.auth.getSession().then(({ data }) => {
+        if (data?.session) setReady(true);
+        else setError("Link inválido ou expirado. Solicite um novo.");
+      });
     }
   }, []);
 
@@ -35,7 +41,7 @@ export function ResetPassword({ onDone }) {
     e.preventDefault();
     setError("");
     if (password.length < 6) { setError("A senha deve ter pelo menos 6 caracteres."); return; }
-    if (password !== confirm) { setError("As senhas não coincidem."); return; }
+    if (password !== confirm)  { setError("As senhas não coincidem."); return; }
     setLoading(true);
     const { error: err } = await supabase.auth.updateUser({ password });
     if (err) { setError(err.message); setLoading(false); return; }
@@ -45,7 +51,7 @@ export function ResetPassword({ onDone }) {
 
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(145deg,#0f172a 0%,#1e1b4b 50%,#1a0533 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ background:"rgba(255,255,255,0.97)", borderRadius:24, padding:"40px 36px 32px", width:"100%", maxWidth:420, boxShadow:"0 40px 100px rgba(0,0,0,0.4)", animation:"fadeIn 0.4s ease both" }}>
+      <div style={{ background:"rgba(255,255,255,0.97)", borderRadius:24, padding:"40px 36px 32px", width:"100%", maxWidth:420, boxShadow:"0 40px 100px rgba(0,0,0,0.4)" }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <div style={{ width:64, height:64, background:"linear-gradient(135deg,#6366f1,#8b5cf6)", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px", boxShadow:"0 8px 24px rgba(99,102,241,0.4)" }}>
             <Ic n="settings" s={28} c="#fff" />
@@ -60,32 +66,32 @@ export function ResetPassword({ onDone }) {
             <p style={{ fontSize:16, fontWeight:700, color:T.emerald[600] }}>Senha redefinida com sucesso!</p>
             <p style={{ fontSize:13, color:T.slate[400], marginTop:8 }}>Redirecionando para o login…</p>
           </div>
+        ) : !ready ? (
+          <div style={{ textAlign:"center", padding:"32px 0" }}>
+            <div style={{ width:40, height:40, border:"3px solid rgba(99,102,241,0.3)", borderTopColor:"#6366f1", borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 16px" }}/>
+            <p style={{ fontSize:14, color:T.slate[400] }}>Verificando link…</p>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        ) : error && !ready ? (
+          <div style={{ textAlign:"center", padding:"20px 0" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>❌</div>
+            <p style={{ fontSize:14, fontWeight:600, color:T.rose[600] }}>{error}</p>
+            <button onClick={onDone} style={{ marginTop:16, padding:"10px 24px", background:T.indigo[500], color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              Voltar ao login
+            </button>
+          </div>
         ) : (
           <form onSubmit={handle}>
             <div style={{ position:"relative" }}>
-              <Field
-                label="Nova senha"
-                type={showPw ? "text" : "password"}
-                value={password}
-                onChange={setPassword}
-                required
-                placeholder="Mínimo 6 caracteres"
-              />
+              <Field label="Nova senha" type={showPw?"text":"password"} value={password} onChange={setPassword} required placeholder="Mínimo 6 caracteres"/>
               <button type="button" onClick={() => setShowPw(p => !p)} style={{ position:"absolute", right:12, top:34, background:"none", border:"none", cursor:"pointer", padding:2 }}>
-                <Ic n="eye" s={16} c={T.slate[400]} />
+                <Ic n="eye" s={16} c={T.slate[400]}/>
               </button>
             </div>
-            <Field
-              label="Confirmar nova senha"
-              type="password"
-              value={confirm}
-              onChange={setConfirm}
-              required
-              placeholder="Repita a senha"
-            />
+            <Field label="Confirmar nova senha" type="password" value={confirm} onChange={setConfirm} required placeholder="Repita a senha"/>
             {error && (
               <div style={{ display:"flex", alignItems:"center", gap:8, background:T.rose[50], border:`1px solid ${T.rose[200]}`, color:T.rose[600], padding:"10px 14px", borderRadius:10, fontSize:13, marginBottom:16 }}>
-                <Ic n="alert_tri" s={15} c={T.rose[500]} />{error}
+                <Ic n="alert_tri" s={15} c={T.rose[500]}/>{error}
               </div>
             )}
             <Btn type="submit" loading={loading} full size="lg">Salvar nova senha</Btn>

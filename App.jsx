@@ -37,6 +37,11 @@ export default function App() {
   const [executions, setExecutions] = useState([]);
   const [bonusRules, setBonusRules] = useState([]);
   const [loading,    setLoading]    = useState(true);
+  // Captura o modo reset ANTES do Supabase limpar o hash
+  const [isReset,    setIsReset]    = useState(() => {
+    const h = typeof window !== "undefined" ? window.location.hash : "";
+    return h.includes("type=recovery") || (h.includes("access_token") && h.includes("refresh_token"));
+  });
   const { toasts, toast, remove }   = useToast();
 
   // ─── LOAD DATA ──────────────────────────────────────────────
@@ -92,11 +97,7 @@ export default function App() {
     await saveBonusRules(rules).catch(console.error);
   }, []);
 
-  // Detecta link de redefinição de senha do Supabase
-  const isReset = typeof window !== "undefined" &&
-    (window.location.hash.includes("type=recovery") || window.location.hash.includes("access_token"));
-  if (isReset) return <><GlobalStyles /><ResetPassword onDone={() => { window.location.hash = ""; window.location.reload(); }} /></>;
-
+  if (isReset) return <><GlobalStyles /><ResetPassword onDone={() => { setIsReset(false); window.location.hash = ""; }} /></>;
   if (loading) return <><GlobalStyles /><Loading /></>;
   if (!user)   return <><GlobalStyles /><Login onLogin={login} /></>;
 
