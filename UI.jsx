@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import ReactDOM from "react-dom";
 import { T } from "./tokens.js";
 import { statusColor, statusLabel } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
@@ -98,21 +99,33 @@ export function Modal({ open, onClose, title, children, width = 500 }) {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
   if (!open) return null;
-  return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:2000, overflowY:"auto", WebkitOverflowScrolling:"touch", background:"rgba(15,23,42,0.6)", backdropFilter:"blur(4px)" }} onClick={onClose}>
-      <div style={{ minHeight:"100%", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"16px" }}>
-        <div className="card-enter" style={{ background:"#fff", borderRadius:16, padding:"24px 22px 20px", width:"100%", maxWidth:width, boxShadow:"0 32px 80px rgba(0,0,0,0.22)", boxSizing:"border-box", marginTop:8, marginBottom:24, position:"relative" }} onClick={e => e.stopPropagation()}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
-          <h3 style={{ fontSize:17, fontWeight:800, color:T.slate[800] }}>{title}</h3>
-          <button onClick={onClose} style={{ background:T.slate[100], border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.15s" }} onMouseOver={e => e.currentTarget.style.background=T.slate[200]} onMouseOut={e => e.currentTarget.style.background=T.slate[100]}>
-            <Ic n="x" s={15} c={T.slate[500]} />
-          </button>
-        </div>
-        {children}
+
+  const content = (
+    <div
+      style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(15,23,42,0.65)", backdropFilter:"blur(4px)", overflowY:"auto", WebkitOverflowScrolling:"touch" }}
+      onClick={onClose}
+    >
+      <div style={{ padding:"16px", minHeight:"100%" }}>
+        <div
+          className="card-enter"
+          style={{ background:"#fff", borderRadius:16, padding:"24px 22px 20px", width:"100%", maxWidth:width, margin:"0 auto", boxShadow:"0 32px 80px rgba(0,0,0,0.25)", boxSizing:"border-box" }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+            <h3 style={{ fontSize:17, fontWeight:800, color:T.slate[800] }}>{title}</h3>
+            <button onClick={onClose} style={{ background:T.slate[100], border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
+              onMouseOver={e => e.currentTarget.style.background=T.slate[200]}
+              onMouseOut={e  => e.currentTarget.style.background=T.slate[100]}>
+              <Ic n="x" s={15} c={T.slate[500]} />
+            </button>
+          </div>
+          {children}
         </div>
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(content, document.body);
 }
 
 // ─── FIELD ────────────────────────────────────────────────────────────────────
