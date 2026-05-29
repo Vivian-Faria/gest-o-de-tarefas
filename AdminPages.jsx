@@ -131,6 +131,17 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
     setTasks(upd, changed);
   };
 
+  const deleteTask = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.")) return;
+    const upd = tasks.filter(t => t.id !== id);
+    setTasks(upd);
+    if (typeof window !== "undefined" && import.meta.env.VITE_SUPABASE_URL) {
+      const { supabase } = await import("./supabase.js");
+      await supabase.from("tarefas").delete().eq("id", id);
+    }
+    toast("Tarefa excluída");
+  };
+
   return (
     <Page title="Tarefas Operacionais" sub={`${tasks.filter(t=>t.ativo).length} ativas`} action={<Btn onClick={openNew} icon="plus">Nova Tarefa</Btn>}>
       {/* Category filters */}
@@ -180,6 +191,7 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
               <div style={{ display:"flex", gap:8, flexShrink:0 }}>
                 <Btn size="sm" variant="secondary" onClick={() => openEdit(t)} icon="edit">Editar</Btn>
                 <Btn size="sm" variant={t.ativo?"danger":"success"} onClick={() => toggle(t.id)}>{t.ativo?"Pausar":"Ativar"}</Btn>
+                <Btn size="sm" variant="danger" onClick={() => deleteTask(t.id)} icon="x">Excluir</Btn>
               </div>
             </div>
           );
