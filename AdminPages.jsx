@@ -245,28 +245,29 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
           const cc   = CAT_COLORS[t.categoria] || { text:T.slate[600], bg:T.slate[100], dot:T.slate[400] };
           const resp = users.find(u => u.id === t.responsavelId);
           return (
-            <div key={t.id} className="task-row" style={{ background:"#fff", border:`1px solid ${T.slate[100]}`, borderRadius:14, padding:"16px 20px", display:"flex", alignItems:"center", gap:16, opacity:t.ativo?1:0.5 }}>
-              <div style={{ width:4, height:48, borderRadius:2, background:cc.dot, flexShrink:0 }} />
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, color:T.slate[800], fontSize:15, marginBottom:6, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.nome}</div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  <Chip color={cc.text} bg={cc.bg} dot>{t.categoria}</Chip>
-                  <Chip color={T.slate[600]} bg={T.slate[100]}>{FREQ_LABEL[t.frequencia]}</Chip>
-                  <Chip color={T.indigo[600]} bg={T.indigo[50]}>{t.peso} pts</Chip>
-                  <Chip color={T.slate[500]} bg={T.slate[50]}><Ic n="clock" s={10} c={T.slate[400]}/>&nbsp;{t.horario}</Chip>
-                  {t.fotoObrigatoria && <Chip color={T.amber[600]} bg={T.amber[50]}><Ic n="camera" s={10} c={T.amber[500]}/>&nbsp;Foto</Chip>}
-                </div>
-              </div>
-              {resp && (
-                <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                  <Avatar user={resp} size={30} />
-                  <div style={{ display:"flex", flexDirection:"column" }}>
-                    <span style={{ fontSize:12, fontWeight:600, color:T.slate[700] }}>{resp.name.split(" ")[0]}</span>
-                    <span style={{ fontSize:11, color:T.slate[400] }}>{resp.setor}</span>
+            <div key={t.id} className="task-row" style={{ background:"#fff", border:`1px solid ${T.slate[100]}`, borderRadius:14, padding:"14px 16px", opacity:t.ativo?1:0.5 }}>
+              {/* Top row: color bar + name + chips */}
+              <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:10 }}>
+                <div style={{ width:4, minHeight:40, borderRadius:2, background:cc.dot, flexShrink:0, alignSelf:"stretch" }} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:700, color:T.slate[800], fontSize:14, marginBottom:6 }}>{t.nome}</div>
+                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                    <Chip color={cc.text} bg={cc.bg} dot>{t.categoria}</Chip>
+                    <Chip color={T.slate[600]} bg={T.slate[100]}>{FREQ_LABEL[t.frequencia]}</Chip>
+                    <Chip color={T.indigo[600]} bg={T.indigo[50]}>{t.peso} pts</Chip>
+                    <Chip color={T.slate[500]} bg={T.slate[50]}><Ic n="clock" s={10} c={T.slate[400]}/>&nbsp;{t.horario}</Chip>
+                    {t.fotoObrigatoria && <Chip color={T.amber[600]} bg={T.amber[50]}><Ic n="camera" s={10} c={T.amber[500]}/>&nbsp;Foto</Chip>}
                   </div>
                 </div>
-              )}
-              <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                {resp && (
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                    <Avatar user={resp} size={28} />
+                    <span style={{ fontSize:11, fontWeight:600, color:T.slate[600] }}>{resp.name.split(" ")[0]}</span>
+                  </div>
+                )}
+              </div>
+              {/* Bottom row: action buttons */}
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap", paddingLeft:16 }}>
                 <Btn size="sm" variant="secondary" onClick={() => openEdit(t)} icon="edit">Editar</Btn>
                 <Btn size="sm" variant="ghost" onClick={() => { setCloneModal(t); setCloneTo(""); }} icon="users">Clonar</Btn>
                 <Btn size="sm" variant={t.ativo?"danger":"success"} onClick={() => toggle(t.id)}>{t.ativo?"Pausar":"Ativar"}</Btn>

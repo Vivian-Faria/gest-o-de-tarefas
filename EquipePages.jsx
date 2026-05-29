@@ -73,32 +73,23 @@ export function PainelEquipe({ user, users, tasks, executions, bonusRules }) {
           {ranking.map((u, i) => (
             <div key={u.id}
               onClick={() => setSelected(selected?.id === u.id ? null : u)}
-              style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, margin:"4px 0", background: selected?.id === u.id ? T.indigo[50] : "transparent", border: selected?.id === u.id ? `1px solid ${T.indigo[200]}` : "1px solid transparent", cursor:"pointer", transition:"all 0.15s" }}
+              style={{ padding:"12px 14px", borderRadius:12, margin:"4px 0", background: selected?.id === u.id ? T.indigo[50] : "transparent", border: selected?.id === u.id ? `1px solid ${T.indigo[200]}` : "1px solid transparent", cursor:"pointer", transition:"all 0.15s" }}
             >
-              <div style={{ width:28, textAlign:"center", flexShrink:0 }}>
-                <span style={{ fontSize:i<3?18:13, fontWeight:800, color:i===0?T.amber[500]:i===1?T.slate[400]:i===2?"#b45309":T.slate[300] }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:i<3?16:12, fontWeight:800, color:i===0?T.amber[500]:i===1?T.slate[400]:i===2?"#b45309":T.slate[300], flexShrink:0, width:24, textAlign:"center" }}>
                   {i<3?medals[i]:i+1}
                 </span>
-              </div>
-              <Avatar user={u} size={40}/>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, color:T.slate[800], fontSize:14 }}>{u.name}</div>
-                <div style={{ fontSize:12, color:T.slate[400], marginTop:2 }}>
-                  {NIVEL_LABEL[u.nivel] || u.cargo}
+                <Avatar user={u} size={36}/>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:700, color:T.slate[800], fontSize:13, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{u.name}</div>
+                  <div style={{ fontSize:11, color:T.slate[400] }}>{NIVEL_LABEL[u.nivel] || u.cargo}</div>
                 </div>
+                <ProgressRing value={u.index} size={44} sw={4}/>
               </div>
-              <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:10, color:T.slate[400], fontWeight:600 }}>FEITAS</div>
-                  <div style={{ fontSize:14, fontWeight:800, color:T.emerald[500] }}>{u.realizadas}</div>
-                </div>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:10, color:T.slate[400], fontWeight:600 }}>PERDIDAS</div>
-                  <div style={{ fontSize:14, fontWeight:800, color:T.rose[400] }}>{u.perdidas}</div>
-                </div>
-                <ProgressRing value={u.index} size={52} sw={5}/>
+              <div style={{ display:"flex", gap:14, marginTop:8, paddingLeft:34 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:T.emerald[500] }}>✓ {u.realizadas} feitas</span>
+                <span style={{ fontSize:11, fontWeight:700, color:T.rose[400] }}>✗ {u.perdidas} perdidas</span>
               </div>
-              <Ic n="chevron_right" s={16} c={T.slate[300]} style={{ transform: selected?.id === u.id ? "rotate(90deg)" : "none", transition:"transform 0.2s" }}/>
             </div>
           ))}
         </div>
