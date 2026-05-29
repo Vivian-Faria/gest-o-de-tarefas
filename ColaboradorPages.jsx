@@ -120,10 +120,10 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
       </div>
 
       {/* Exec modal */}
-      <Modal open={!!execModal} onClose={() => setExecModal(null)} title="Registrar Execução">
+      <Modal open={!!execModal} onClose={() => setExecModal(null)} title="Registrar Execução" width={460}>
         {execModal && (
           <>
-            <div style={{ background:T.slate[50], borderRadius:12, padding:"12px 16px", marginBottom:20, display:"flex", gap:10, alignItems:"center" }}>
+            <div style={{ background:T.slate[50], borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"center" }}>
               <Ic n="task" s={16} c={T.indigo[500]}/>
               <div>
                 <div style={{ fontWeight:700, fontSize:14, color:T.slate[800] }}>{execModal.nome}</div>
@@ -131,8 +131,8 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
               </div>
             </div>
 
-            <div style={{ marginBottom:18 }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:700, color:T.slate[600], marginBottom:10, letterSpacing:0.3 }}>STATUS <span style={{ color:T.rose[500] }}>*</span></label>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:T.slate[600], marginBottom:8, letterSpacing:0.3 }}>STATUS <span style={{ color:T.rose[500] }}>*</span></label>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 {[
                   { v:"concluida",     label:"Concluída",      icon:"check", col:T.emerald[500], bg:T.emerald[50], border:T.emerald[300] },
@@ -153,8 +153,8 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
 
             <Field label="Observação (opcional)" type="textarea" value={form.observacao} onChange={v => setForm(p => ({...p, observacao:v}))} placeholder="Descreva como foi a execução, problemas encontrados..." />
 
-            <div style={{ marginBottom:20 }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:700, color:T.slate[600], marginBottom:8, letterSpacing:0.3 }}>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:T.slate[600], marginBottom:6, letterSpacing:0.3 }}>
                 FOTO DE EVIDÊNCIA{execModal.fotoObrigatoria && <span style={{ color:T.rose[500] }}>  *</span>}
                 {!execModal.fotoObrigatoria && <span style={{ fontWeight:400, color:T.slate[400] }}>  (opcional)</span>}
               </label>
@@ -170,13 +170,13 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
                   </div>
                 </div>
               ) : (
-                <button onClick={() => fileRef.current?.click()} style={{ width:"100%", padding:"32px 20px", border:`2px dashed ${T.slate[200]}`, borderRadius:12, background:T.slate[50], cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:10, fontFamily:"inherit" }} onMouseOver={e=>{e.currentTarget.style.borderColor=T.indigo[300];e.currentTarget.style.background=T.indigo[50]}} onMouseOut={e=>{e.currentTarget.style.borderColor=T.slate[200];e.currentTarget.style.background=T.slate[50]}}>
-                  <div style={{ width:48, height:48, borderRadius:14, background:T.slate[100], display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <Ic n="camera" s={22} c={T.slate[400]}/>
+                <button onClick={() => fileRef.current?.click()} style={{ width:"100%", padding:"20px 16px", border:`2px dashed ${T.slate[200]}`, borderRadius:12, background:T.slate[50], cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit" }} onMouseOver={e=>{e.currentTarget.style.borderColor=T.indigo[300];e.currentTarget.style.background=T.indigo[50]}} onMouseOut={e=>{e.currentTarget.style.borderColor=T.slate[200];e.currentTarget.style.background=T.slate[50]}}>
+                  <div style={{ width:40, height:40, borderRadius:12, background:T.slate[100], display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <Ic n="camera" s={20} c={T.slate[400]}/>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"left" }}>
                     <p style={{ fontSize:14, fontWeight:700, color:T.slate[600], margin:0 }}>Tirar foto</p>
-                    <p style={{ fontSize:12, color:T.slate[400], margin:"4px 0 0" }}>Clique para abrir a câmera</p>
+                    <p style={{ fontSize:12, color:T.slate[400], margin:"2px 0 0" }}>Toque para abrir a câmera</p>
                   </div>
                 </button>
               )}
@@ -194,18 +194,18 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
 }
 
 // ─── MEU DESEMPENHO ───────────────────────────────────────────────────────────
-export function MeuDesempenho({ user, tasks, executions, bonusRules }) {
+export function MeuDesempenho({ user, users, tasks, executions, bonusRules }) {
   const p      = calcPerf(user.id, executions, tasks);
   const bonus  = getBonus(p.index, bonusRules);
   const sColor = statusColor(p.index);
 
-  const allUsers = store.get("go_users", []).filter(u => u.role === "colaborador" && u.ativo);
-  const allTasks = store.get("go_tasks", []);
-  const ranking  = allUsers.map(u => {
-    const up = calcPerf(u.id, executions, allTasks);
+  // Usa os dados do Supabase (props) em vez do localStorage
+  const allColabs = users.filter(u => u.role === "colaborador" && u.ativo);
+  const ranking   = allColabs.map(u => {
+    const up = calcPerf(u.id, executions, tasks);
     return { id:u.id, name:u.name, avatar:u.avatar, index:up.index };
   }).sort((a, b) => b.index - a.index);
-  const myRank = ranking.findIndex(u => u.id === user.id) + 1;
+  const myRank = Math.max(ranking.findIndex(u => u.id === user.id) + 1, 1);
 
   const days7    = getLast7Days();
   const chartData = days7.map(d => ({ d, v: executions.filter(e => e.userId === user.id && e.date === d && e.status === "concluida").length }));

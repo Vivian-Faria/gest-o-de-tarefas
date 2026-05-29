@@ -173,11 +173,16 @@ export async function upsertTask(task) {
 // ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
 export async function fetchExecucoes() {
   if (!USE_SUPABASE) return store.get("go_execs", []);
+  // Busca todas as execuções — RLS filtra automaticamente por perfil
   const { data, error } = await supabase
     .from("execucoes")
     .select("*")
-    .order("timestamp", { ascending: false });
-  if (error) handleError("fetchExecucoes", error);
+    .order("timestamp", { ascending: false })
+    .limit(1000);
+  if (error) {
+    console.error("fetchExecucoes error:", error);
+    return [];
+  }
   return (data ?? []).map(rowToExec);
 }
 
