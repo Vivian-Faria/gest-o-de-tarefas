@@ -109,6 +109,17 @@ export async function getSession() {
   return data.session;
 }
 
+// ─── SESSION HELPER ──────────────────────────────────────────────────────────
+async function ensureSession() {
+  const { data } = await supabase.auth.getSession();
+  if (data?.session) return true;
+  // Tenta restaurar via refresh token armazenado pelo Supabase
+  const { data: refreshed } = await supabase.auth.refreshSession();
+  if (refreshed?.session) return true;
+  console.warn("[dataService] sem sessão ativa");
+  return false;
+}
+
 // ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
 export async function fetchUsers() {
   if (!USE_SUPABASE) return store.get("go_users", []);
@@ -136,6 +147,7 @@ export async function upsertUser(user) {
 // ─── TAREFAS ──────────────────────────────────────────────────────────────────
 export async function fetchTasks() {
   if (!USE_SUPABASE) return store.get("go_tasks", []);
+  await ensureSession();
   const { data, error } = await supabase.from("tarefas").select("*").order("horario");
   if (error) { console.error("[fetchTasks]", error.message); return []; }
   return (data ?? []).map(rowToTask);
@@ -161,6 +173,7 @@ export async function upsertTask(task) {
 // ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
 export async function fetchExecucoes() {
   if (!USE_SUPABASE) return store.get("go_execs", []);
+  await ensureSession();
   const { data, error } = await supabase
     .from("execucoes")
     .select("*")

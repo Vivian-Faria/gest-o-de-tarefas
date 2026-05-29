@@ -71,6 +71,19 @@ export default function App() {
     try { await loadAll(); } finally { setLoading(false); }
   }, [loadAll]);
 
+  // Restaura sessão Supabase ao recarregar a página
+  useEffect(() => {
+    if (!USE_SUPABASE) return;
+    const { data: { subscription } } = supabase.onAuthStateChange(async (event, session) => {
+      console.log("[auth] event:", event, "session:", !!session);
+      if (event === "SIGNED_OUT" || !session) {
+        setUser(null);
+        setActive(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const login = useCallback(async (email, password) => {
     const u = await loginUser(email, password);
     setUser(u);
@@ -112,14 +125,19 @@ export default function App() {
   }, [toast]);
 
   const handleSetExecutions = useCallback(async (updated, execToSave) => {
-    setExecutions(updated);
+    setExecutions(updated); // otimista: mostra na tela imediatamente
     if (execToSave) {
       try {
-        await insertExecucao(execToSave);
+        const saved = await insertExecucao(execToSave);
+        console.log("[App] execucao salva:", saved?.id);
+        // Recarrega do banco para confirmar
+        const fresh = await fetchExecucoes();
+        setExecutions(fresh);
       } catch(e) {
-        console.error("insertExecucao error:", e);
-        toast("Erro ao registrar execução: " + (e?.message ?? e), "error");
-        fetchExecucoes().then(e => setExecutions(e)).catch(()=>{});
+        console.error("[App] insertExecucao error:", e);
+        toast("Erro ao salvar execução: " + (e?.message ?? e), "error");
+        // Reverte ao estado do banco
+        fetchExecucoes().then(f => setExecutions(f)).catch(()=>{});
       }
     }
   }, [toast]);
