@@ -16,19 +16,50 @@ export function Colaboradores({ users, setUsers, toast }) {
   const openNew  = () => { setEditing(null); setForm(blank); setModal(true); };
   const openEdit = u  => { setEditing(u);    setForm({...u}); setModal(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name || !form.email) { toast("Preencha nome e e-mail", "error"); return; }
+
+    // Campos que vão para a tabela usuarios (sem password - fica no auth.users)
+    const { password, ...profileData } = form;
+
     let upd;
     if (editing) {
-      upd = users.map(u => u.id === editing.id ? { ...form, id:editing.id, avatar:initials(form.name) } : u);
+      const updated = { ...profileData, id:editing.id, avatar:initials(form.name) };
+      upd = users.map(u => u.id === editing.id ? updated : u);
       toast("Colaborador atualizado");
+      setUsers(upd, updated);
     } else {
       if (users.find(u => u.email === form.email)) { toast("E-mail já cadastrado", "error"); return; }
-      upd = [...users, { ...form, id:"u"+Date.now(), avatar:initials(form.name) }];
-      toast("Colaborador cadastrado");
+
+      // Cria usuário no Supabase Auth primeiro
+      try {
+        const { supabase } = await import("./supabase.js");
+        const { data: authData, error: authError } = await supabase.auth.admin
+          ? await supabase.auth.admin.createUser({ email: form.email, password: form.password || "123456", email_confirm: true })
+          : { data: null, error: { message: "Use o Supabase dashboard para criar o login" } };
+
+        if (authError) {
+          // Fallback: cria perfil sem auth (admin cria no dashboard)
+          toast("Perfil criado. Crie o login no Supabase Auth manualmente.", "info");
+        }
+
+        const newUser = {
+          ...profileData,
+          id: "u-" + form.name.toLowerCase().replace(/\s+/g, "").slice(0, 10) + Date.now().toString().slice(-4),
+          avatar: initials(form.name),
+          auth_id: authData?.user?.id || null,
+        };
+        upd = [...users, newUser];
+        toast("Colaborador cadastrado — crie o login no Supabase Auth com: " + form.email);
+        setUsers(upd, newUser);
+      } catch(e) {
+        toast("Colaborador cadastrado localmente", "success");
+        const newUser = { ...profileData, id:"u-"+Date.now(), avatar:initials(form.name), auth_id: null };
+        upd = [...users, newUser];
+        setUsers(upd, newUser);
+      }
     }
-    const userToSave = editing ? { ...form, id:editing.id, avatar:initials(form.name) } : upd[upd.length-1];
-    setUsers(upd, userToSave); setModal(false);
+    setModal(false);
   };
 
   const toggle = id => {

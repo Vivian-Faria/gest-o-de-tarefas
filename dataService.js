@@ -137,9 +137,10 @@ export async function upsertUser(user) {
     store.set("go_users", updated);
     return user;
   }
-  const { id, auth_id, created_at, ...rest } = user;
+  // Remove campos que não existem na tabela usuarios
+  const { id, auth_id, created_at, password, ...rest } = user;
   const { data, error } = await supabase
-    .from("usuarios").update(rest).eq("id", user.id).select().maybeSingle();
+    .from("usuarios").upsert({ id, ...rest }, { onConflict:"id" }).select().maybeSingle();
   if (error) handleError("upsertUser", error);
   return data ?? user;
 }
