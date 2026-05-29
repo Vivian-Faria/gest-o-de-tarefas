@@ -41,20 +41,44 @@ export function getLast7Days() {
   });
 }
 
-// ─── PERFORMANCE ──────────────────────────────────────────────────────────────
+// ─── PERFORMANCE MENSAL ───────────────────────────────────────────────────────
+// Calcula quantas vezes cada tarefa deveria ter sido feita até hoje no mês
+function occurrencesUntilToday(frequencia, first, today) {
+  const start  = new Date(first + "T00:00:00");
+  const end    = new Date(today + "T00:00:00");
+  const diffMs = end - start;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // +1 inclui hoje
+
+  if (frequencia === "diaria")       return diffDays;
+  if (frequencia === "semanal")      return Math.ceil(diffDays / 7);
+  if (frequencia === "mensal")       return 1;
+  if (frequencia === "personalizada") return 1;
+  return diffDays;
+}
+
 export function calcPerf(userId, execs, tasks) {
-  const { first, last } = getMonthRange(0);
+  const { first } = getMonthRange(0);
+  const today = todayStr();
+  const { last } = getMonthRange(0);
   const ue = execs.filter(e => e.userId === userId && e.date >= first && e.date <= last);
   const ut = tasks.filter(t => t.responsavelId === userId && t.ativo);
   if (!ut.length) return { index:0, obtidos:0, possiveis:0, realizadas:0, perdidas:0 };
-  const possiveis = ut.reduce((s, t) => s + t.peso, 0);
-  const obtidos   = ue.filter(e => e.status === "concluida").reduce((s, e) => {
+
+  // Possíveis = soma de (peso × ocorrências esperadas até hoje)
+  const possiveis = ut.reduce((s, t) => {
+    const occ = occurrencesUntilToday(t.frequencia, first, today);
+    return s + (t.peso * occ);
+  }, 0);
+
+  // Obtidos = soma dos pesos das execuções concluídas no mês
+  const obtidos = ue.filter(e => e.status === "concluida").reduce((s, e) => {
     const t = ut.find(t => t.id === e.taskId);
     return s + (t ? t.peso : 0);
   }, 0);
+
   const realizadas = ue.filter(e => e.status === "concluida").length;
   const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
-  const index = possiveis > 0 ? Math.round((obtidos / possiveis) * 100) : 0;
+  const index = possiveis > 0 ? Math.min(Math.round((obtidos / possiveis) * 100), 100) : 0;
   return { index, obtidos, possiveis, realizadas, perdidas };
 }
 
