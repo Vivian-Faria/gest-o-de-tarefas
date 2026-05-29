@@ -36,18 +36,25 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
     reader.readAsDataURL(file);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (execModal?.fotoObrigatoria && !form.photo) { toast("Esta tarefa exige uma foto de evidência", "error"); return; }
     setSaving(true);
-    setTimeout(() => {
-      const exec = { id:"e"+Date.now(), taskId:execModal.id, userId:user.id, date:todayStr(), timestamp:new Date().toISOString(), status:form.status, observacao:form.observacao, photo:form.photo };
-      const upd  = [...executions, exec];
-      store.set("go_execs", upd);
-      setExecutions(upd);
-      setExecModal(null);
-      setSaving(false);
-      toast(form.status === "concluida" ? "Tarefa concluída com sucesso! 🎉" : "Tarefa registrada como não concluída");
-    }, 400);
+    const exec = {
+      id:         "e" + Date.now(),
+      taskId:     execModal.id,
+      userId:     user.id,
+      date:       todayStr(),
+      timestamp:  new Date().toISOString(),
+      status:     form.status,
+      observacao: form.observacao,
+      photo:      form.photo,
+    };
+    const upd = [...executions, exec];
+    // Passa exec como segundo argumento para salvar no Supabase
+    await setExecutions(upd, exec);
+    setExecModal(null);
+    setSaving(false);
+    toast(form.status === "concluida" ? "Tarefa concluída com sucesso! 🎉" : "Tarefa registrada como não concluída");
   };
 
   const motivational = pct >= 90 ? "🏆 Desempenho excelente!" : pct >= 70 ? "⚡ Continue assim!" : pct > 0 ? "💪 Você está indo bem!" : "👋 Comece suas tarefas!";
