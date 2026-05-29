@@ -22,13 +22,6 @@ export function Login({ onLogin }) {
     }
   };
 
-  const demos = [
-    { label:"Admin",   email:"admin@empresa.com",   pw:"admin123" },
-    { label:"Carlos",  email:"carlos@empresa.com",  pw:"123456" },
-    { label:"Ana",     email:"ana@empresa.com",      pw:"123456" },
-    { label:"Roberto", email:"roberto@empresa.com",  pw:"123456" },
-  ];
-
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(145deg,#0f172a 0%,#1e1b4b 50%,#1a0533 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%)", top:-100, right:-100, pointerEvents:"none" }} />
@@ -61,21 +54,7 @@ export function Login({ onLogin }) {
           </form>
         </div>
 
-        <div style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:16, padding:"18px 20px", backdropFilter:"blur(10px)" }}>
-          <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>
-            Acesso rápido — demonstração
-          </p>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {demos.map(d => (
-              <button key={d.label} onClick={() => { setEmail(d.email); setPw(d.pw); }}
-                style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:600, color:"rgba(255,255,255,0.8)", cursor:"pointer", transition:"all 0.15s", fontFamily:"inherit" }}
-                onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-                onMouseOut={e  => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}>
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </div>
+
       </div>
     </div>
   );
