@@ -148,13 +148,20 @@ const FREQ_LABEL = { diaria:"Diária", semanal:"Semanal", mensal:"Mensal", perso
 
 export function Tarefas({ tasks, setTasks, users, toast }) {
   const blank = { nome:"", descricao:"", categoria:"Limpeza", horario:"08:00", frequencia:"diaria", tempoEstimado:15, peso:5, fotoObrigatoria:true, responsavelId:"", ativo:true };
-  const [modal, setModal]     = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm]       = useState(blank);
+  const [modal, setModal]         = useState(false);
+  const [editing, setEditing]     = useState(null);
+  const [form, setForm]           = useState(blank);
   const [filterCat, setFilterCat] = useState("");
+  const [filterColab, setFilterColab] = useState("");
+  const [cloneModal, setCloneModal]   = useState(null); // tarefa a clonar
+  const [cloneTo, setCloneTo]         = useState("");
   const f = k => v => setForm(p => ({ ...p, [k]:v }));
   const colabs = users.filter(u => u.role === "colaborador" && u.ativo);
-  const filtered = tasks.filter(t => !filterCat || t.categoria === filterCat);
+  const filtered = tasks.filter(t => {
+    if (filterCat   && t.categoria      !== filterCat)   return false;
+    if (filterColab && t.responsavelId  !== filterColab) return false;
+    return true;
+  });
 
   const openNew  = () => { setEditing(null); setForm(blank); setModal(true); };
   const openEdit = t  => { setEditing(t); setForm({...t}); setModal(true); };
@@ -177,6 +184,21 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
     const upd = tasks.map(t => t.id === id ? { ...t, ativo:!t.ativo } : t);
     const changed = upd.find(t => t.id === id);
     setTasks(upd, changed);
+  };
+
+  const cloneTask = () => {
+    if (!cloneTo) { toast("Selecione o colaborador de destino", "error"); return; }
+    const newTask = {
+      ...cloneModal,
+      id:            "t" + Date.now(),
+      responsavelId: cloneTo,
+      nome:          cloneModal.nome,
+    };
+    const upd = [...tasks, newTask];
+    setTasks(upd, newTask);
+    toast(`Tarefa clonada para ${users.find(u=>u.id===cloneTo)?.name || "colaborador"}`);
+    setCloneModal(null);
+    setCloneTo("");
   };
 
   const deleteTask = async (id) => {
@@ -206,6 +228,14 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
           );
         })}
         {filterCat && <button onClick={() => setFilterCat("")} style={{ padding:"5px 12px", borderRadius:20, border:"none", background:T.rose[50], color:T.rose[500], fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}><Ic n="x" s={12} c={T.rose[500]}/>Limpar</button>}
+        <div style={{ width:1, height:20, background:T.slate[200], margin:"0 4px" }}/>
+        <Ic n="user" s={14} c={T.slate[400]}/>
+        <span style={{ fontSize:12, fontWeight:700, color:T.slate[500] }}>Colaborador:</span>
+        <select value={filterColab} onChange={e=>setFilterColab(e.target.value)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${T.slate[200]}`, fontSize:12, fontFamily:"inherit", color:T.slate[600], background:"#fff", cursor:"pointer" }}>
+          <option value="">Todos</option>
+          {colabs.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+        {filterColab && <button onClick={()=>setFilterColab("")} style={{ padding:"5px 12px", borderRadius:20, border:"none", background:T.rose[50], color:T.rose[500], fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}><Ic n="x" s={12} c={T.rose[500]}/>Limpar</button>}
       </div>
 
       {filtered.length === 0 && <Empty icon="task" title="Nenhuma tarefa" sub="Clique em 'Nova Tarefa' para começar" />}
@@ -238,6 +268,7 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
               )}
               <div style={{ display:"flex", gap:8, flexShrink:0 }}>
                 <Btn size="sm" variant="secondary" onClick={() => openEdit(t)} icon="edit">Editar</Btn>
+                <Btn size="sm" variant="ghost" onClick={() => { setCloneModal(t); setCloneTo(""); }} icon="users">Clonar</Btn>
                 <Btn size="sm" variant={t.ativo?"danger":"success"} onClick={() => toggle(t.id)}>{t.ativo?"Pausar":"Ativar"}</Btn>
                 <Btn size="sm" variant="danger" onClick={() => deleteTask(t.id)} icon="x">Excluir</Btn>
               </div>
@@ -263,6 +294,32 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
           <Btn variant="secondary" onClick={() => setModal(false)}>Cancelar</Btn>
           <Btn onClick={save}>{editing?"Salvar Alterações":"Criar Tarefa"}</Btn>
         </div>
+      </Modal>
+
+      {/* Clone modal */}
+      <Modal open={!!cloneModal} onClose={() => setCloneModal(null)} title="Clonar Tarefa" width={420}>
+        {cloneModal && (
+          <>
+            <div style={{ background:T.slate[50], borderRadius:10, padding:"12px 16px", marginBottom:18 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:T.slate[700] }}>{cloneModal.nome}</div>
+              <div style={{ fontSize:12, color:T.slate[400], marginTop:2 }}>Esta tarefa será copiada para outro colaborador</div>
+            </div>
+            <Field
+              label="Clonar para"
+              value={cloneTo}
+              onChange={setCloneTo}
+              required
+              options={[
+                { value:"", label:"— Selecionar colaborador —" },
+                ...colabs.filter(u => u.id !== cloneModal.responsavelId).map(u => ({ value:u.id, label:`${u.name} (${u.nivel||u.cargo})` }))
+              ]}
+            />
+            <div style={{ display:"flex", gap:10, justifyContent:"flex-end", paddingTop:8, borderTop:`1px solid ${T.slate[100]}` }}>
+              <Btn variant="secondary" onClick={() => setCloneModal(null)}>Cancelar</Btn>
+              <Btn onClick={cloneTask} icon="users">Clonar Tarefa</Btn>
+            </div>
+          </>
+        )}
       </Modal>
     </Page>
   );
