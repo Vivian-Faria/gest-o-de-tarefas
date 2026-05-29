@@ -18,6 +18,7 @@ import { Login }           from "./Login.jsx";
 import { AdminDashboard }  from "./AdminDashboard.jsx";
 import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./AdminPages.jsx";
 import { MinhasTarefas, MeuDesempenho } from "./ColaboradorPages.jsx";
+import { PainelEquipe } from "./EquipePages.jsx";
 import { ResetPassword } from "./ResetPassword.jsx";
 
 // ─── LOADING SCREEN ───────────────────────────────────────────
@@ -206,6 +207,7 @@ export default function App() {
     "config":          <Config         {...shared} />,
     "minhas-tarefas":  <MinhasTarefas  {...shared} />,
     "meu-desempenho":  <MeuDesempenho  {...shared} />,
+    "painel-equipe":   <PainelEquipe   {...shared} />,
   };
 
   return (

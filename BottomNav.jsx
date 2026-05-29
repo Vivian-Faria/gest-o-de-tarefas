@@ -9,14 +9,26 @@ const ADMIN_NAV = [
   { id:"relatorios",    icon:"download", label:"Relatórios"},
 ];
 
+const LIDER_NAV = [
+  { id:"minhas-tarefas", icon:"task",  label:"Tarefas"   },
+  { id:"painel-equipe",  icon:"users", label:"Equipe"    },
+  { id:"meu-desempenho", icon:"chart", label:"Desempenho"},
+];
+
 const USER_NAV = [
   { id:"minhas-tarefas", icon:"task",  label:"Tarefas"    },
   { id:"meu-desempenho", icon:"chart", label:"Desempenho" },
 ];
 
+function getNav(user) {
+  if (user.role === "admin") return ADMIN_NAV;
+  const nivel = user.nivel || "operador";
+  if (nivel === "lider" || nivel === "supervisor") return LIDER_NAV;
+  return USER_NAV;
+}
+
 export function BottomNav({ user, active, setActive, onLogout, onSync }) {
-  const isAdmin = user.role === "admin";
-  const nav = isAdmin ? ADMIN_NAV : USER_NAV;
+  const nav = getNav(user);
 
   return (
     <nav className="bottom-nav" style={{

@@ -12,14 +12,27 @@ const ADMIN_NAV = [
   { id:"config",        label:"Configurações",   icon:"settings" },
 ];
 
+const LIDER_NAV = [
+  { id:"minhas-tarefas", label:"Minhas Tarefas", icon:"task"   },
+  { id:"painel-equipe",  label:"Minha Equipe",   icon:"users"  },
+  { id:"meu-desempenho", label:"Meu Desempenho", icon:"chart"  },
+];
+
 const USER_NAV = [
   { id:"minhas-tarefas", label:"Minhas Tarefas", icon:"task"  },
   { id:"meu-desempenho", label:"Meu Desempenho", icon:"chart" },
 ];
 
+function getNav(user) {
+  if (user.role === "admin") return ADMIN_NAV;
+  const nivel = user.nivel || "operador";
+  if (nivel === "lider" || nivel === "supervisor") return LIDER_NAV;
+  return USER_NAV;
+}
+
 export function Sidebar({ user, active, setActive, onLogout }) {
   const isAdmin = user.role === "admin";
-  const nav = isAdmin ? ADMIN_NAV : USER_NAV;
+  const nav = getNav(user);
 
   return (
     <aside className="sidebar sidebar-desktop" style={{ width:228, background:T.slate[900], display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0, flexShrink:0, borderRight:"1px solid rgba(255,255,255,0.05)" }}>
