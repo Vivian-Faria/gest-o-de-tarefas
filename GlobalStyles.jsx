@@ -33,6 +33,12 @@ export function GlobalStyles() {
       .sidebar-desktop { display: flex !important; }
       .bottom-nav      { display: none !important; }
       .main-content    { padding: 32px 36px; }
+      /* MODAL GRID RESPONSIVO */
+    .modal-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 16px; }
+    @media (max-width: 540px) {
+      .modal-form-grid { grid-template-columns: 1fr !important; }
+      .modal-form-grid > * { grid-column: 1 / -1 !important; }
+    }
       /* MOBILE */
       @media (max-width: 768px) {
         .sidebar-desktop  { display: none !important; }

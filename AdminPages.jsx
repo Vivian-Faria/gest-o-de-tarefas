@@ -6,7 +6,7 @@ import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
 export function Colaboradores({ users, setUsers, toast }) {
-  const blank = { name:"", email:"", password:"", cargo:"", setor:"", role:"colaborador", ativo:true };
+  const blank = { name:"", email:"", password:"", cargo:"", setor:"", nivel:"operador", role:"colaborador", ativo:true };
   const [modal, setModal]   = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm]     = useState(blank);
@@ -66,12 +66,19 @@ export function Colaboradores({ users, setUsers, toast }) {
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Editar Colaborador" : "Novo Colaborador"}>
-        <div className="modal-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:"0 16px" }}>
           <div style={{ gridColumn:"1/-1" }}><Field label="Nome completo" value={form.name} onChange={f("name")} required /></div>
           <div style={{ gridColumn:"1/-1" }}><Field label="E-mail" type="email" value={form.email} onChange={f("email")} required /></div>
           {!editing && <div style={{ gridColumn:"1/-1" }}><Field label="Senha" type="password" value={form.password} onChange={f("password")} required /></div>}
           <Field label="Cargo" value={form.cargo} onChange={f("cargo")} placeholder="Ex: Operador" />
           <Field label="Setor" value={form.setor} onChange={f("setor")} placeholder="Ex: Produção" />
+          <Field label="Nível hierárquico" value={form.nivel || "operador"} onChange={f("nivel")}
+            options={[
+              { value:"operador",   label:"Operador"   },
+              { value:"atendente",  label:"Atendente"  },
+              { value:"lider",      label:"Líder"      },
+              { value:"supervisor", label:"Supervisor" },
+            ]} />
           <div style={{ gridColumn:"1/-1" }}>
             <Field label="Perfil de acesso" value={form.role} onChange={f("role")} options={[{ value:"colaborador", label:"Colaborador Operacional" },{ value:"admin", label:"Administrador" }]} />
           </div>
@@ -182,13 +189,14 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
       <Modal open={modal} onClose={() => setModal(false)} title={editing?"Editar Tarefa":"Nova Tarefa"} width={540}>
         <Field label="Nome da tarefa" value={form.nome} onChange={f("nome")} required />
         <Field label="Descrição" type="textarea" value={form.descricao} onChange={f("descricao")} placeholder="Descreva o procedimento..." />
-        <div className="modal-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
-          <Field label="Categoria"           value={form.categoria}      onChange={f("categoria")}      options={CAT_OPTS} />
-          <Field label="Horário sugerido"    type="time"                  value={form.horario}           onChange={f("horario")} />
-          <Field label="Frequência"          value={form.frequencia}     onChange={f("frequencia")}     options={FREQ_OPTS} />
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:"0 16px" }}>
+          <Field label="Categoria"            value={form.categoria}     onChange={f("categoria")}      options={CAT_OPTS} />
+          <Field label="Horário sugerido"     type="time"                value={form.horario}           onChange={f("horario")} />
+          <Field label="Frequência"           value={form.frequencia}    onChange={f("frequencia")}     options={FREQ_OPTS} />
           <Field label="Tempo estimado (min)" type="number"              value={form.tempoEstimado}     onChange={v => f("tempoEstimado")(Number(v))} />
-          <Field label="Peso / Pontuação"    type="number"                value={form.peso}             onChange={v => f("peso")(Number(v))} hint="Valor em pontos para esta tarefa" />
-          <Field label="Responsável"         value={form.responsavelId}  onChange={f("responsavelId")} options={[{ value:"", label:"— Selecionar —" }, ...colabs.map(u => ({ value:u.id, label:u.name }))]} />
+          <Field label="Peso / Pontuação"     type="number"              value={form.peso}              onChange={v => f("peso")(Number(v))} hint="Valor em pontos"/>
+          <Field label="Responsável"          value={form.responsavelId} onChange={f("responsavelId")}
+            options={[{ value:"", label:"— Selecionar —" }, ...colabs.map(u => ({ value:u.id, label:`${u.name} (${u.nivel||u.cargo})` }))]} />
         </div>
         <Field type="checkbox" value={form.fotoObrigatoria} onChange={f("fotoObrigatoria")} placeholder="Foto obrigatória como evidência de execução" />
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end", paddingTop:8, borderTop:`1px solid ${T.slate[100]}` }}>
