@@ -7,6 +7,7 @@ const ADMIN_NAV = [
   { id:"colaboradores", icon:"users",    label:"Equipe"    },
   { id:"execucoes",     icon:"chart",    label:"Execuções" },
   { id:"relatorios",    icon:"download", label:"Relatórios"},
+  { id:"pontos-extras", icon:"star",     label:"Pontos"    },
 ];
 
 const LIDER_NAV = [

@@ -227,4 +227,31 @@ export async function saveBonusRules(rules) {
   return data ?? rules;
 }
 
+// ─── PONTOS EXTRAS ───────────────────────────────────────────────────────────
+export async function fetchPontosExtras() {
+  if (!USE_SUPABASE) return store.get("go_pontos", []);
+  await ensureSession();
+  const { data, error } = await supabase
+    .from("pontos_extras")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) { console.error("[fetchPontosExtras]", error.message); return []; }
+  return data ?? [];
+}
+
+export async function insertPontosExtras(entry) {
+  if (!USE_SUPABASE) {
+    const all = [...store.get("go_pontos", []), entry];
+    store.set("go_pontos", all);
+    return entry;
+  }
+  const { data, error } = await supabase
+    .from("pontos_extras")
+    .insert(entry)
+    .select()
+    .maybeSingle();
+  if (error) handleError("insertPontosExtras", error);
+  return data ?? entry;
+}
+
 export { USE_SUPABASE };

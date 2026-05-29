@@ -56,13 +56,13 @@ function occurrencesUntilToday(frequencia, first, today) {
   return diffDays;
 }
 
-export function calcPerf(userId, execs, tasks) {
+export function calcPerf(userId, execs, tasks, pontosExtras = []) {
   const { first } = getMonthRange(0);
   const today = todayStr();
   const { last } = getMonthRange(0);
+  const mesAtual = today.slice(0, 7);
   const ue = execs.filter(e => e.userId === userId && e.date >= first && e.date <= last);
   const ut = tasks.filter(t => t.responsavelId === userId && t.ativo);
-  if (!ut.length) return { index:0, obtidos:0, possiveis:0, realizadas:0, perdidas:0 };
 
   // Possíveis = soma de (peso × ocorrências esperadas até hoje)
   const possiveis = ut.reduce((s, t) => {
@@ -70,16 +70,26 @@ export function calcPerf(userId, execs, tasks) {
     return s + (t.peso * occ);
   }, 0);
 
-  // Obtidos = soma dos pesos das execuções concluídas no mês
+  // Obtidos = tarefas concluídas
   const obtidos = ue.filter(e => e.status === "concluida").reduce((s, e) => {
     const t = ut.find(t => t.id === e.taskId);
     return s + (t ? t.peso : 0);
   }, 0);
 
+  // Pontos extras do mês
+  const extras = pontosExtras
+    .filter(p => p.user_id === userId && p.mes === mesAtual)
+    .reduce((s, p) => s + p.pontos, 0);
+
   const realizadas = ue.filter(e => e.status === "concluida").length;
   const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
-  const index = possiveis > 0 ? Math.min(Math.round((obtidos / possiveis) * 100), 100) : 0;
-  return { index, obtidos, possiveis, realizadas, perdidas };
+
+  if (!ut.length) return { index: extras > 0 ? Math.min(extras, 100) : 0, obtidos: extras, possiveis: 0, realizadas, perdidas, extras };
+
+  const index = possiveis > 0
+    ? Math.min(Math.round(((obtidos + extras) / possiveis) * 100), 100)
+    : 0;
+  return { index, obtidos: obtidos + extras, possiveis, realizadas, perdidas, extras };
 }
 
 export function getBonus(index, rules) {

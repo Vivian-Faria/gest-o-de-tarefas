@@ -9,6 +9,7 @@ const ADMIN_NAV = [
   { id:"tarefas",       label:"Tarefas",         icon:"task"     },
   { id:"execucoes",     label:"Execuções",        icon:"chart"    },
   { id:"relatorios",    label:"Relatórios",      icon:"download" },
+  { id:"pontos-extras", label:"Pontos Extras",   icon:"star"     },
   { id:"config",        label:"Configurações",   icon:"settings" },
 ];
 

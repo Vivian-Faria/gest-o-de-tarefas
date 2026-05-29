@@ -10,6 +10,7 @@ import {
   loginUser, logoutUser,
   fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
+  fetchPontosExtras, insertPontosExtras,
   USE_SUPABASE,
 } from "./dataService.js";
 import { supabase } from "./supabase.js";
@@ -18,7 +19,8 @@ import { Login }           from "./Login.jsx";
 import { AdminDashboard }  from "./AdminDashboard.jsx";
 import { Colaboradores, Tarefas, Execucoes, Relatorios, Config } from "./AdminPages.jsx";
 import { MinhasTarefas, MeuDesempenho } from "./ColaboradorPages.jsx";
-import { PainelEquipe } from "./EquipePages.jsx";
+import { PainelEquipe }    from "./EquipePages.jsx";
+import { PontosExtrasPage } from "./PontosExtras.jsx";
 import { ResetPassword } from "./ResetPassword.jsx";
 
 // ─── LOADING SCREEN ───────────────────────────────────────────
@@ -39,6 +41,7 @@ export default function App() {
   const [tasks,      setTasks]      = useState([]);
   const [executions, setExecutions] = useState([]);
   const [bonusRules, setBonusRules] = useState([]);
+  const [pontosExtras, setPontosExtras] = useState([]);
   const [loading,    setLoading]    = useState(true);
   // Captura o modo reset ANTES do Supabase limpar o hash
   const [isReset,    setIsReset]    = useState(() => {
@@ -50,16 +53,18 @@ export default function App() {
   // ─── LOAD DATA ──────────────────────────────────────────────
   const loadAll = useCallback(async () => {
     if (!USE_SUPABASE) { initStorage(); return; }
-    const [u, t, e, b] = await Promise.all([
+    const [u, t, e, b, pe] = await Promise.all([
       fetchUsers(),
       fetchTasks(),
       fetchExecucoes(),
       fetchBonusRules(),
+      fetchPontosExtras(),
     ]);
     setUsers(u);
     setTasks(t);
     setExecutions(e);
     setBonusRules(b.length ? b : BONUS_RULES);
+    setPontosExtras(pe);
   }, []);
 
   useEffect(() => {
@@ -171,6 +176,17 @@ export default function App() {
     }
   }, [toast]);
 
+  const handleAddPontosExtras = useCallback(async (entry) => {
+    try {
+      const saved = await insertPontosExtras(entry);
+      setPontosExtras(p => [saved, ...p]);
+      return saved;
+    } catch(e) {
+      toast("Erro ao salvar pontos: " + e.message, "error");
+      throw e;
+    }
+  }, [toast]);
+
   const handleSetBonusRules = useCallback(async (rules) => {
     setBonusRules(rules);
     try {
@@ -196,6 +212,8 @@ export default function App() {
     setTasks:      (upd, toSave) => handleSetTasks(upd, toSave),
     setExecutions: (upd, toSave) => handleSetExecutions(upd, toSave),
     setBonusRules: handleSetBonusRules,
+    pontosExtras,
+    addPontosExtras: handleAddPontosExtras,
   };
 
   const pages = {
@@ -208,6 +226,7 @@ export default function App() {
     "minhas-tarefas":  <MinhasTarefas  {...shared} />,
     "meu-desempenho":  <MeuDesempenho  {...shared} />,
     "painel-equipe":   <PainelEquipe   {...shared} />,
+    "pontos-extras":   <PontosExtrasPage {...shared} />,
   };
 
   return (
