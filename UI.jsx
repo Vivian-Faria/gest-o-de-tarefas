@@ -99,8 +99,9 @@ export function Modal({ open, onClose, title, children, width = 500 }) {
   }, [open]);
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(15,23,42,0.6)", zIndex:2000, overflowY:"auto", backdropFilter:"blur(4px)", WebkitOverflowScrolling:"touch", padding:"12px" }} onClick={onClose}>
-      <div className="card-enter" style={{ background:"#fff", borderRadius:16, padding:"24px 20px 20px", width:"100%", maxWidth:width, boxShadow:"0 32px 80px rgba(0,0,0,0.22)", boxSizing:"border-box", margin:"max(12px, env(safe-area-inset-top)) auto 24px" }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:2000, overflowY:"auto", WebkitOverflowScrolling:"touch", background:"rgba(15,23,42,0.6)", backdropFilter:"blur(4px)" }} onClick={onClose}>
+      <div style={{ minHeight:"100%", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"16px" }}>
+        <div className="card-enter" style={{ background:"#fff", borderRadius:16, padding:"24px 22px 20px", width:"100%", maxWidth:width, boxShadow:"0 32px 80px rgba(0,0,0,0.22)", boxSizing:"border-box", marginTop:8, marginBottom:24, position:"relative" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
           <h3 style={{ fontSize:17, fontWeight:800, color:T.slate[800] }}>{title}</h3>
           <button onClick={onClose} style={{ background:T.slate[100], border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.15s" }} onMouseOver={e => e.currentTarget.style.background=T.slate[200]} onMouseOut={e => e.currentTarget.style.background=T.slate[100]}>
@@ -108,6 +109,7 @@ export function Modal({ open, onClose, title, children, width = 500 }) {
           </button>
         </div>
         {children}
+        </div>
       </div>
     </div>
   );
