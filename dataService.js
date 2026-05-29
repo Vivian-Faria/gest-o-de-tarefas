@@ -24,7 +24,7 @@ function taskToRow(t) {
     tempo_estimado:   t.tempoEstimado,
     peso:             t.peso,
     foto_obrigatoria: t.fotoObrigatoria,
-    responsavel_id:   t.responsavelId || null,  // || null converte "" para null
+    responsavel_id:   t.responsavelId || null,
     ativo:            t.ativo,
   };
 }
@@ -46,15 +46,19 @@ function rowToTask(r) {
 }
 
 function execToRow(e) {
+  // Garante que date é string YYYY-MM-DD
+  const dateStr = typeof e.date === "string"
+    ? e.date.split("T")[0]
+    : new Date().toISOString().split("T")[0];
   return {
     id:         e.id,
     task_id:    e.taskId,
     user_id:    e.userId,
-    date:       e.date,
+    date:       dateStr,
     timestamp:  e.timestamp,
     status:     e.status,
-    observacao: e.observacao ?? null,
-    photo_url:  e.photo ?? null,
+    observacao: e.observacao || null,
+    photo_url:  e.photo || null,
   };
 }
 
@@ -63,7 +67,7 @@ function rowToExec(r) {
     id:         r.id,
     taskId:     r.task_id,
     userId:     r.user_id,
-    date:       r.date,
+    date:       typeof r.date === "string" ? r.date.split("T")[0] : r.date,
     timestamp:  r.timestamp,
     status:     r.status,
     observacao: r.observacao,
@@ -89,18 +93,9 @@ export async function loginUser(email, password) {
     .eq("auth_id", data.user.id)
     .maybeSingle();
 
-  if (pe) {
-    await supabase.auth.signOut();
-    throw new Error("Erro ao buscar perfil: " + pe.message);
-  }
-  if (!profile) {
-    await supabase.auth.signOut();
-    throw new Error("Usuário não encontrado no sistema. Contate o administrador.");
-  }
-  if (!profile.ativo) {
-    await supabase.auth.signOut();
-    throw new Error("Usuário inativo. Contate o administrador.");
-  }
+  if (pe) { await supabase.auth.signOut(); throw new Error("Erro ao buscar perfil: " + pe.message); }
+  if (!profile) { await supabase.auth.signOut(); throw new Error("Usuário não encontrado. Contate o administrador."); }
+  if (!profile.ativo) { await supabase.auth.signOut(); throw new Error("Usuário inativo. Contate o administrador."); }
   return profile;
 }
 
@@ -118,8 +113,8 @@ export async function getSession() {
 export async function fetchUsers() {
   if (!USE_SUPABASE) return store.get("go_users", []);
   const { data, error } = await supabase.from("usuarios").select("*").order("name");
-  if (error) handleError("fetchUsers", error);
-  return data;
+  if (error) { console.error("[fetchUsers]", error.message); return store.get("go_users", []); }
+  return data ?? [];
 }
 
 export async function upsertUser(user) {
@@ -131,14 +126,9 @@ export async function upsertUser(user) {
     store.set("go_users", updated);
     return user;
   }
-  // Usuários usam snake_case já igual ao app exceto auth_id que não enviamos no upsert
   const { id, auth_id, created_at, ...rest } = user;
   const { data, error } = await supabase
-    .from("usuarios")
-    .update(rest)
-    .eq("id", user.id)
-    .select()
-    .maybeSingle();
+    .from("usuarios").update(rest).eq("id", user.id).select().maybeSingle();
   if (error) handleError("upsertUser", error);
   return data ?? user;
 }
@@ -147,7 +137,7 @@ export async function upsertUser(user) {
 export async function fetchTasks() {
   if (!USE_SUPABASE) return store.get("go_tasks", []);
   const { data, error } = await supabase.from("tarefas").select("*").order("horario");
-  if (error) handleError("fetchTasks", error);
+  if (error) { console.error("[fetchTasks]", error.message); return []; }
   return (data ?? []).map(rowToTask);
 }
 
@@ -161,11 +151,9 @@ export async function upsertTask(task) {
     return task;
   }
   const row = taskToRow(task);
+  console.log("[upsertTask]", row.id, row.nome);
   const { data, error } = await supabase
-    .from("tarefas")
-    .upsert(row, { onConflict: "id" })
-    .select()
-    .maybeSingle();
+    .from("tarefas").upsert(row, { onConflict: "id" }).select().maybeSingle();
   if (error) handleError("upsertTask", error);
   return data ? rowToTask(data) : task;
 }
@@ -173,16 +161,16 @@ export async function upsertTask(task) {
 // ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
 export async function fetchExecucoes() {
   if (!USE_SUPABASE) return store.get("go_execs", []);
-  // Busca todas as execuções — RLS filtra automaticamente por perfil
   const { data, error } = await supabase
     .from("execucoes")
     .select("*")
     .order("timestamp", { ascending: false })
     .limit(1000);
   if (error) {
-    console.error("fetchExecucoes error:", error);
+    console.error("[fetchExecucoes]", error.message, error.code);
     return [];
   }
+  console.log("[fetchExecucoes] total:", data?.length ?? 0);
   return (data ?? []).map(rowToExec);
 }
 
@@ -193,12 +181,17 @@ export async function insertExecucao(exec) {
     return exec;
   }
   const row = execToRow(exec);
+  console.log("[insertExecucao] tentando salvar:", row.id, "user:", row.user_id, "task:", row.task_id, "date:", row.date, "status:", row.status);
   const { data, error } = await supabase
     .from("execucoes")
     .insert(row)
     .select()
     .maybeSingle();
-  if (error) handleError("insertExecucao", error);
+  if (error) {
+    console.error("[insertExecucao] ERRO:", error.message, error.code, error.details, error.hint);
+    handleError("insertExecucao", error);
+  }
+  console.log("[insertExecucao] SALVO com sucesso:", data?.id);
   return data ? rowToExec(data) : exec;
 }
 
@@ -206,17 +199,15 @@ export async function insertExecucao(exec) {
 export async function fetchBonusRules() {
   if (!USE_SUPABASE) return store.get("go_bonus", []);
   const { data, error } = await supabase
-    .from("bonus_rules")
-    .select("*")
-    .order("min", { ascending: false });
-  if (error) handleError("fetchBonusRules", error);
+    .from("bonus_rules").select("*").order("min", { ascending: false });
+  if (error) { console.error("[fetchBonusRules]", error.message); return []; }
   return data ?? [];
 }
 
 export async function saveBonusRules(rules) {
   if (!USE_SUPABASE) { store.set("go_bonus", rules); return rules; }
   await supabase.from("bonus_rules").delete().neq("id", 0);
-  const rows = rules.map(({ id, ...r }) => r); // remove id serial para reinserir
+  const rows = rules.map(({ id, ...r }) => r);
   const { data, error } = await supabase.from("bonus_rules").insert(rows).select();
   if (error) handleError("saveBonusRules", error);
   return data ?? rules;
