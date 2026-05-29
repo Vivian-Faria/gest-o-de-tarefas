@@ -16,50 +16,67 @@ export function Colaboradores({ users, setUsers, toast }) {
   const openNew  = () => { setEditing(null); setForm(blank); setModal(true); };
   const openEdit = u  => { setEditing(u);    setForm({...u}); setModal(true); };
 
+  const [saving, setSaving] = useState(false);
+
   const save = async () => {
     if (!form.name || !form.email) { toast("Preencha nome e e-mail", "error"); return; }
+    setSaving(true);
 
-    // Campos que vão para a tabela usuarios (sem password - fica no auth.users)
     const { password, ...profileData } = form;
 
-    let upd;
     if (editing) {
+      // Edição — só atualiza o perfil (não muda senha pelo app)
       const updated = { ...profileData, id:editing.id, avatar:initials(form.name) };
-      upd = users.map(u => u.id === editing.id ? updated : u);
-      toast("Colaborador atualizado");
+      const upd = users.map(u => u.id === editing.id ? updated : u);
       setUsers(upd, updated);
-    } else {
-      if (users.find(u => u.email === form.email)) { toast("E-mail já cadastrado", "error"); return; }
-
-      // Cria usuário no Supabase Auth primeiro
-      try {
-        const { supabase } = await import("./supabase.js");
-        const { data: authData, error: authError } = await supabase.auth.admin
-          ? await supabase.auth.admin.createUser({ email: form.email, password: form.password || "123456", email_confirm: true })
-          : { data: null, error: { message: "Use o Supabase dashboard para criar o login" } };
-
-        if (authError) {
-          // Fallback: cria perfil sem auth (admin cria no dashboard)
-          toast("Perfil criado. Crie o login no Supabase Auth manualmente.", "info");
-        }
-
-        const newUser = {
-          ...profileData,
-          id: "u-" + form.name.toLowerCase().replace(/\s+/g, "").slice(0, 10) + Date.now().toString().slice(-4),
-          avatar: initials(form.name),
-          auth_id: authData?.user?.id || null,
-        };
-        upd = [...users, newUser];
-        toast("Colaborador cadastrado — crie o login no Supabase Auth com: " + form.email);
-        setUsers(upd, newUser);
-      } catch(e) {
-        toast("Colaborador cadastrado localmente", "success");
-        const newUser = { ...profileData, id:"u-"+Date.now(), avatar:initials(form.name), auth_id: null };
-        upd = [...users, newUser];
-        setUsers(upd, newUser);
-      }
+      toast("Colaborador atualizado");
+      setSaving(false);
+      setModal(false);
+      return;
     }
-    setModal(false);
+
+    // Novo colaborador — chama a Netlify Function
+    if (users.find(u => u.email === form.email)) {
+      toast("E-mail já cadastrado", "error");
+      setSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/.netlify/functions/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:     form.name,
+          email:    form.email,
+          password: form.password || "123456",
+          cargo:    form.cargo,
+          setor:    form.setor,
+          nivel:    form.nivel || "operador",
+          role:     form.role  || "colaborador",
+          avatar:   initials(form.name),
+          ativo:    form.ativo,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        toast("Erro: " + (json.error || "Falha ao criar colaborador"), "error");
+        setSaving(false);
+        return;
+      }
+
+      const newUser = json.user;
+      const upd = [...users, newUser];
+      setUsers(upd, null); // já foi salvo pela function, não precisa chamar upsertUser
+      toast("Colaborador cadastrado com sucesso!");
+      setModal(false);
+    } catch(e) {
+      toast("Erro ao conectar: " + e.message, "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggle = id => {
