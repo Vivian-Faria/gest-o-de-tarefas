@@ -102,7 +102,7 @@ export default function App() {
   // Restaura sessão Supabase ao recarregar a página
   useEffect(() => {
     if (!USE_SUPABASE) return;
-    const { data: { subscription } } = supabase.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[auth] event:", event, "session:", !!session);
       if (event === "SIGNED_OUT" || !session) {
         setUser(null);
