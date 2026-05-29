@@ -5,13 +5,14 @@ import { BottomNav }      from "./BottomNav.jsx";
 import { ToastContainer }  from "./UI.jsx";
 import { useToast }        from "./useToast.js";
 import { BONUS_RULES }     from "./tokens.js";
-import { initStorage }     from "./helpers.js";
+import { initStorage, store as localStore } from "./helpers.js";
 import {
   loginUser, logoutUser,
   fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
   USE_SUPABASE,
 } from "./dataService.js";
+import { supabase } from "./supabase.js";
 
 import { Login }           from "./Login.jsx";
 import { AdminDashboard }  from "./AdminDashboard.jsx";
@@ -47,7 +48,7 @@ export default function App() {
 
   // ─── LOAD DATA ──────────────────────────────────────────────
   const loadAll = useCallback(async () => {
-    if (!USE_SUPABASE) initStorage();
+    if (!USE_SUPABASE) { initStorage(); return; }
     const [u, t, e, b] = await Promise.all([
       fetchUsers(),
       fetchTasks(),
@@ -61,7 +62,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadAll().finally(() => setLoading(false));
+    const init = async () => {
+      if (!USE_SUPABASE) {
+        initStorage();
+        setUsers(localStore.get("go_users", []));
+        setTasks(localStore.get("go_tasks", []));
+        setExecutions(localStore.get("go_execs", []));
+        setBonusRules(localStore.get("go_bonus", BONUS_RULES));
+        setLoading(false);
+        return;
+      }
+      // Restaura sessão existente (token salvo no localStorage pelo Supabase)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Busca perfil do usuário logado
+        const { data: profile } = await supabase
+          .from("usuarios")
+          .select("*")
+          .eq("auth_id", session.user.id)
+          .maybeSingle();
+        if (profile && profile.ativo) {
+          setUser(profile);
+          setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
+        }
+      }
+      await loadAll();
+      setLoading(false);
+    };
+    init();
   }, [loadAll]);
 
   // ─── AUTH ───────────────────────────────────────────────────
