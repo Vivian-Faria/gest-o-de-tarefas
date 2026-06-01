@@ -2,14 +2,16 @@ import { useState } from "react";
 import { T, CAT_COLORS } from "./tokens.js";
 import { store, initials, fmtDate, fmtTime, calcPerf, getBonus, statusColor, getMonthRange, monthLabel, todayStr } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
+import { HistoricoDashboard } from "./HistoricoDashboard.jsx";
 import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
-export function Colaboradores({ users, setUsers, toast }) {
+export function Colaboradores({ users, setUsers, toast, tasks, executions, pontosExtras }) {
   const blank = { name:"", email:"", password:"", cargo:"", setor:"", nivel:"operador", role:"colaborador", ativo:true };
-  const [modal, setModal]   = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm]     = useState(blank);
+  const [modal, setModal]         = useState(false);
+  const [editing, setEditing]     = useState(null);
+  const [form, setForm]           = useState(blank);
+  const [showDash, setShowDash]   = useState(false);
   const f = k => v => setForm(p => ({ ...p, [k]:v }));
   const colabs = users.filter(u => u.role === "colaborador");
 
@@ -88,7 +90,12 @@ export function Colaboradores({ users, setUsers, toast }) {
   };
 
   return (
-    <Page title="Colaboradores" sub={`${colabs.length} cadastrados`} action={<Btn onClick={openNew} icon="plus">Novo Colaborador</Btn>}>
+    <Page title="Colaboradores" sub={`${colabs.length} cadastrados`} action={
+        <div style={{ display:"flex", gap:10 }}>
+          <Btn variant="ghost" onClick={() => setShowDash(true)} icon="chart">Dashboard</Btn>
+          <Btn onClick={openNew} icon="plus">Novo Colaborador</Btn>
+        </div>
+      }>
       {colabs.length === 0 && <Empty icon="users" title="Nenhum colaborador" sub="Clique em 'Novo Colaborador' para começar" />}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:16 }}>
         {colabs.map(u => (
@@ -137,6 +144,16 @@ export function Colaboradores({ users, setUsers, toast }) {
           <Btn onClick={save}>{editing ? "Salvar Alterações" : "Cadastrar"}</Btn>
         </div>
       </Modal>
+
+      {showDash && (
+        <HistoricoDashboard
+          users={users}
+          tasks={tasks || []}
+          executions={executions || []}
+          pontosExtras={pontosExtras || []}
+          onClose={() => setShowDash(false)}
+        />
+      )}
     </Page>
   );
 }

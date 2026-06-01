@@ -56,6 +56,39 @@ function occurrencesUntilToday(frequencia, first, today) {
   return diffDays;
 }
 
+// Calcula desempenho para um mês específico (offset: 0=atual, -1=anterior, etc.)
+export function calcPerfForMonth(userId, execs, tasks, pontosExtras = [], offset = 0) {
+  const { first, last } = getMonthRange(offset);
+  const mes = first.slice(0, 7);
+
+  const ue = execs.filter(e => e.userId === userId && e.date >= first && e.date <= last);
+  const ut = tasks.filter(t => t.responsavelId === userId && t.ativo);
+
+  // Para meses passados, usamos o último dia do mês como referência
+  const refDay = offset < 0 ? last : todayStr();
+
+  const possiveis = ut.reduce((s, t) => {
+    const occ = occurrencesUntilToday(t.frequencia, first, refDay > last ? last : refDay);
+    return s + (t.peso * occ);
+  }, 0);
+
+  const obtidos = ue.filter(e => e.status === "concluida").reduce((s, e) => {
+    const t = ut.find(t => t.id === e.taskId);
+    return s + (t ? t.peso : 0);
+  }, 0);
+
+  const extras = (pontosExtras || [])
+    .filter(p => p.user_id === userId && p.mes === mes)
+    .reduce((s, p) => s + p.pontos, 0);
+
+  const realizadas = ue.filter(e => e.status === "concluida").length;
+  const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
+
+  if (!ut.length) return { index: 0, obtidos: extras, possiveis: 0, realizadas, perdidas, extras, mes };
+  const index = possiveis > 0 ? Math.min(Math.round(((obtidos + extras) / possiveis) * 100), 100) : 0;
+  return { index, obtidos: obtidos + extras, possiveis, realizadas, perdidas, extras, mes };
+}
+
 export function calcPerf(userId, execs, tasks, pontosExtras = []) {
   const { first } = getMonthRange(0);
   const today = todayStr();
