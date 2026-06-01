@@ -84,9 +84,10 @@ export function calcPerfForMonth(userId, execs, tasks, pontosExtras = [], offset
   const realizadas = ue.filter(e => e.status === "concluida").length;
   const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
 
-  if (!ut.length) return { index: 0, obtidos: extras, possiveis: 0, realizadas, perdidas, extras, mes };
-  const index = possiveis > 0 ? Math.min(Math.round(((obtidos + extras) / possiveis) * 100), 100) : 0;
-  return { index, obtidos: obtidos + extras, possiveis, realizadas, perdidas, extras, mes };
+  if (!ut.length) return { index: 0, obtidos: 0, possiveis: 0, realizadas, perdidas, extras, mes };
+  // extras NÃO entram no índice — são bônus separado
+  const index = possiveis > 0 ? Math.min(Math.round((obtidos / possiveis) * 100), 100) : 0;
+  return { index, obtidos, possiveis, realizadas, perdidas, extras, mes };
 }
 
 export function calcPerf(userId, execs, tasks, pontosExtras = []) {

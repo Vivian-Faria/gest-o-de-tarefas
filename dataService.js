@@ -227,6 +227,29 @@ export async function saveBonusRules(rules) {
   return data ?? rules;
 }
 
+// ─── REGRAS DE PONTOS EXTRAS ─────────────────────────────────────────────────
+export const DEFAULT_EXTRA_RULES = [
+  { pontos: 5,  valor: 25  },
+  { pontos: 10, valor: 50  },
+  { pontos: 15, valor: 75  },
+];
+
+export async function fetchExtraRules() {
+  if (!USE_SUPABASE) return store.get("go_extra_rules", DEFAULT_EXTRA_RULES);
+  const { data, error } = await supabase.from("extra_rules").select("*").order("pontos");
+  if (error || !data?.length) return store.get("go_extra_rules", DEFAULT_EXTRA_RULES);
+  return data;
+}
+
+export async function saveExtraRules(rules) {
+  if (!USE_SUPABASE) { store.set("go_extra_rules", rules); return rules; }
+  await supabase.from("extra_rules").delete().neq("id", 0);
+  const rows = rules.map(({ id, ...r }) => r);
+  const { data, error } = await supabase.from("extra_rules").insert(rows).select();
+  if (error) { store.set("go_extra_rules", rules); return rules; }
+  return data ?? rules;
+}
+
 // ─── PONTOS EXTRAS ───────────────────────────────────────────────────────────
 export async function fetchPontosExtras() {
   if (!USE_SUPABASE) return store.get("go_pontos", []);

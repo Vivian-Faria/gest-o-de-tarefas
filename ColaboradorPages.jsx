@@ -201,10 +201,17 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
 }
 
 // ─── MEU DESEMPENHO ───────────────────────────────────────────────────────────
-export function MeuDesempenho({ user, users, tasks, executions, bonusRules }) {
-  const p      = calcPerf(user.id, executions, tasks);
+export function MeuDesempenho({ user, users, tasks, executions, bonusRules, pontosExtras, extraRules }) {
+  const p      = calcPerf(user.id, executions, tasks, pontosExtras);
   const bonus  = getBonus(p.index, bonusRules);
   const sColor = statusColor(p.index);
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const totalExtras = (pontosExtras || [])
+    .filter(pe => pe.user_id === user.id && pe.mes === mesAtual)
+    .reduce((s, pe) => s + pe.pontos, 0);
+  const bonusExtraRule = (extraRules || []).find(r => r.pontos === totalExtras)
+    || (extraRules || []).reduce((best, r) => r.pontos <= totalExtras && r.pontos > (best?.pontos || 0) ? r : best, null);
+  const bonusExtra = bonusExtraRule ? bonusExtraRule.valor : 0;
 
   // Usa os dados do Supabase (props) em vez do localStorage
   const allColabs = users.filter(u => u.role === "colaborador" && u.ativo);
@@ -231,9 +238,21 @@ export function MeuDesempenho({ user, users, tasks, executions, bonusRules }) {
           <div style={{ fontSize:14, color:T.slate[500], marginTop:6 }}>{p.obtidos} de {p.possiveis} pontos · #{myRank} no ranking</div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ background:"#fff", borderRadius:14, padding:"16px 22px", textAlign:"center", border:`1px solid ${T.slate[100]}` }}>
-            <div style={{ fontSize:11, color:T.slate[400], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Estimado</div>
-            <div style={{ fontSize:28, fontWeight:900, color:bonus>0?T.emerald[500]:T.slate[300], letterSpacing:-0.5, marginTop:4 }}>R$ {bonus}</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ background:"#fff", borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.slate[100]}` }}>
+              <div style={{ fontSize:10, color:T.slate[400], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Tarefas</div>
+              <div style={{ fontSize:22, fontWeight:900, color:bonus>0?T.emerald[500]:T.slate[300], marginTop:2 }}>R$ {bonus}</div>
+            </div>
+            {bonusExtra > 0 && (
+              <div style={{ background:T.amber[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.amber[200]}` }}>
+                <div style={{ fontSize:10, color:T.amber[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Extras</div>
+                <div style={{ fontSize:22, fontWeight:900, color:T.amber[500], marginTop:2 }}>R$ {bonusExtra}</div>
+              </div>
+            )}
+            <div style={{ background:T.emerald[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.emerald[200]}` }}>
+              <div style={{ fontSize:10, color:T.emerald[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Total Estimado</div>
+              <div style={{ fontSize:24, fontWeight:900, color:T.emerald[500], marginTop:2 }}>R$ {bonus + bonusExtra}</div>
+            </div>
           </div>
           {nextBonus && (
             <div style={{ background:T.amber[50], border:`1px solid ${T.amber[200]}`, borderRadius:12, padding:"10px 16px", textAlign:"center" }}>

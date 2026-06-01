@@ -453,7 +453,7 @@ export function Relatorios({ users, tasks, executions, bonusRules }) {
         <table style={{ width:"100%", borderCollapse:"collapse" }}>
           <thead>
             <tr style={{ background:T.slate[50] }}>
-              {["#","Colaborador","Cargo","Setor","Realizadas","Perdidas","Índice","Bônus"].map(h => (
+              {["#","Colaborador","Cargo","Setor","Realizadas","Perdidas","Índice","Bônus Tarefas","Bônus Extras","Total"].map(h => (
                 <th key={h} style={{ padding:"12px 16px", fontSize:11, fontWeight:700, color:T.slate[500], textAlign:"left", borderBottom:`1px solid ${T.slate[100]}`, letterSpacing:0.5, textTransform:"uppercase" }}>{h}</th>
               ))}
             </tr>
@@ -481,7 +481,13 @@ export function Relatorios({ users, tasks, executions, bonusRules }) {
                   </div>
                 </td>
                 <td style={{ padding:"14px 16px" }}>
-                  <span style={{ fontSize:15, fontWeight:900, color:u.bonus>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus}</span>
+                  <span style={{ fontSize:14, fontWeight:800, color:u.bonus>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus}</span>
+                </td>
+                <td style={{ padding:"14px 16px" }}>
+                  <span style={{ fontSize:14, fontWeight:800, color:u.bonusExtra>0?T.amber[500]:T.slate[300] }}>R$ {u.bonusExtra}</span>
+                </td>
+                <td style={{ padding:"14px 16px" }}>
+                  <span style={{ fontSize:15, fontWeight:900, color:(u.bonus+u.bonusExtra)>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus + u.bonusExtra}</span>
                 </td>
               </tr>
             ))}
@@ -506,10 +512,17 @@ export function Relatorios({ users, tasks, executions, bonusRules }) {
 }
 
 // ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
-export function Config({ bonusRules, setBonusRules, toast }) {
-  const [rules, setRules] = useState([...bonusRules]);
-  const upd = (i, k, v) => setRules(r => r.map((x, idx) => idx === i ? { ...x, [k]:Number(v) } : x));
-  const save = () => { store.set("go_bonus", rules); setBonusRules(rules); toast("Configurações salvas"); };
+export function Config({ bonusRules, setBonusRules, extraRules, setExtraRules, toast }) {
+  const [rules,  setRules]  = useState([...bonusRules]);
+  const [extras, setExtras] = useState([...(extraRules || [{ pontos:5, valor:25 }, { pontos:10, valor:50 }, { pontos:15, valor:75 }])]);
+  const upd      = (i, k, v) => setRules(r  => r.map((x, idx)  => idx === i ? { ...x, [k]:Number(v) } : x));
+  const updExtra = (i, v)    => setExtras(r => r.map((x, idx)  => idx === i ? { ...x, valor:Number(v) } : x));
+  const save = () => {
+    store.set("go_bonus", rules);
+    setBonusRules(rules);
+    setExtraRules(extras);
+    toast("Configurações salvas");
+  };
 
   return (
     <Page title="Configurações" sub="Regras de bonificação e parâmetros do sistema">
@@ -542,6 +555,30 @@ export function Config({ bonusRules, setBonusRules, toast }) {
             ))}
           </div>
           <Btn onClick={save} full icon="check">Salvar Configurações</Btn>
+        </div>
+
+        {/* Extra points value config */}
+        <div style={{ background:"#fff", border:`1px solid ${T.slate[100]}`, borderRadius:16, padding:24 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:T.amber[50], display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <Ic n="star" s={16} c={T.amber[500]}/>
+            </div>
+            <div>
+              <h3 style={{ fontSize:15, fontWeight:800, color:T.slate[800] }}>Valor dos Pontos Extras</h3>
+              <p style={{ fontSize:12, color:T.slate[400] }}>Bônus separado do índice de desempenho</p>
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
+            {extras.map((r, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", background:T.slate[50], borderRadius:10, border:`1px solid ${T.slate[100]}` }}>
+                <span style={{ fontSize:16 }}>{"⭐".repeat(i+1)}</span>
+                <span style={{ fontSize:13, fontWeight:700, color:T.slate[600], flex:1 }}>{r.pontos} pontos extras</span>
+                <span style={{ fontSize:12, color:T.slate[400] }}>= R$</span>
+                <input type="number" value={r.valor} onChange={e => updExtra(i, e.target.value)}
+                  style={{ width:80, padding:"5px 8px", border:`1.5px solid ${T.slate[200]}`, borderRadius:8, fontSize:13, fontFamily:"inherit", textAlign:"center", fontWeight:700, color:T.amber[600] }}/>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Status legend */}

@@ -11,6 +11,7 @@ import {
   fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
   fetchPontosExtras, insertPontosExtras,
+  fetchExtraRules, saveExtraRules, DEFAULT_EXTRA_RULES,
   USE_SUPABASE,
 } from "./dataService.js";
 import { supabase } from "./supabase.js";
@@ -42,6 +43,7 @@ export default function App() {
   const [executions, setExecutions] = useState([]);
   const [bonusRules, setBonusRules] = useState([]);
   const [pontosExtras, setPontosExtras] = useState([]);
+  const [extraRules,   setExtraRules]   = useState([]);
   const [loading,    setLoading]    = useState(true);
   // Captura o modo reset ANTES do Supabase limpar o hash
   const [isReset,    setIsReset]    = useState(() => {
@@ -53,18 +55,20 @@ export default function App() {
   // ─── LOAD DATA ──────────────────────────────────────────────
   const loadAll = useCallback(async () => {
     if (!USE_SUPABASE) { initStorage(); return; }
-    const [u, t, e, b, pe] = await Promise.all([
+    const [u, t, e, b, pe, er] = await Promise.all([
       fetchUsers(),
       fetchTasks(),
       fetchExecucoes(),
       fetchBonusRules(),
       fetchPontosExtras(),
+      fetchExtraRules(),
     ]);
     setUsers(u);
     setTasks(t);
     setExecutions(e);
     setBonusRules(b.length ? b : BONUS_RULES);
     setPontosExtras(pe);
+    setExtraRules(er.length ? er : DEFAULT_EXTRA_RULES);
   }, []);
 
   useEffect(() => {
@@ -214,6 +218,8 @@ export default function App() {
     setBonusRules: handleSetBonusRules,
     pontosExtras,
     addPontosExtras: handleAddPontosExtras,
+    extraRules,
+    setExtraRules: async (rules) => { setExtraRules(rules); await saveExtraRules(rules).catch(console.error); },
   };
 
   const pages = {
