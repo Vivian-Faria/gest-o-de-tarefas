@@ -43,17 +43,23 @@ export function getLast7Days() {
 
 // ─── PERFORMANCE MENSAL ───────────────────────────────────────────────────────
 // Calcula quantas vezes cada tarefa deveria ter sido feita até hoje no mês
-function occurrencesUntilToday(frequencia, first, today) {
-  const start  = new Date(first + "T00:00:00");
-  const end    = new Date(today + "T00:00:00");
-  const diffMs = end - start;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // +1 inclui hoje
+function occurrencesInMonth(frequencia, first, last) {
+  // Calcula quantas vezes a tarefa ocorre no mês COMPLETO
+  const start    = new Date(first + "T00:00:00");
+  const end      = new Date(last  + "T00:00:00");
+  const diffMs   = end - start;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 
-  if (frequencia === "diaria")       return diffDays;
-  if (frequencia === "semanal")      return Math.ceil(diffDays / 7);
-  if (frequencia === "mensal")       return 1;
+  if (frequencia === "diaria")        return diffDays;
+  if (frequencia === "semanal")       return Math.ceil(diffDays / 7);
+  if (frequencia === "mensal")        return 1;
   if (frequencia === "personalizada") return 1;
   return diffDays;
+}
+
+// Mantido para compatibilidade com calcPerfForMonth de meses passados
+function occurrencesUntilToday(frequencia, first, today) {
+  return occurrencesInMonth(frequencia, first, today);
 }
 
 // Calcula desempenho para um mês específico (offset: 0=atual, -1=anterior, etc.)
@@ -98,9 +104,9 @@ export function calcPerf(userId, execs, tasks, pontosExtras = []) {
   const ue = execs.filter(e => e.userId === userId && e.date >= first && e.date <= last);
   const ut = tasks.filter(t => t.responsavelId === userId && t.ativo);
 
-  // Possíveis = soma de (peso × ocorrências esperadas até hoje)
+  // Possíveis = soma de (peso × ocorrências do mês COMPLETO)
   const possiveis = ut.reduce((s, t) => {
-    const occ = occurrencesUntilToday(t.frequencia, first, today);
+    const occ = occurrencesInMonth(t.frequencia, first, last);
     return s + (t.peso * occ);
   }, 0);
 
@@ -118,12 +124,13 @@ export function calcPerf(userId, execs, tasks, pontosExtras = []) {
   const realizadas = ue.filter(e => e.status === "concluida").length;
   const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
 
-  if (!ut.length) return { index: extras > 0 ? Math.min(extras, 100) : 0, obtidos: extras, possiveis: 0, realizadas, perdidas, extras };
+  if (!ut.length) return { index: 0, obtidos: 0, possiveis: 0, realizadas, perdidas, extras };
 
+  // extras NÃO entram no índice — são bônus separado (Tese B)
   const index = possiveis > 0
-    ? Math.min(Math.round(((obtidos + extras) / possiveis) * 100), 100)
+    ? Math.min(Math.round((obtidos / possiveis) * 100), 100)
     : 0;
-  return { index, obtidos: obtidos + extras, possiveis, realizadas, perdidas, extras };
+  return { index, obtidos, possiveis, realizadas, perdidas, extras };
 }
 
 export function getBonus(index, rules) {
