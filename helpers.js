@@ -96,7 +96,7 @@ export function calcPerfForMonth(userId, execs, tasks, pontosExtras = [], offset
   return { index, obtidos, possiveis, realizadas, perdidas, extras, mes };
 }
 
-export function calcPerf(userId, execs, tasks, pontosExtras = []) {
+export function calcPerf(userId, execs, tasks, pontosExtras = [], advertencias = []) {
   const { first } = getMonthRange(0);
   const today = todayStr();
   const { last } = getMonthRange(0);
@@ -116,21 +116,27 @@ export function calcPerf(userId, execs, tasks, pontosExtras = []) {
     return s + (t ? t.peso : 0);
   }, 0);
 
-  // Pontos extras do mês
-  const extras = pontosExtras
+  // Pontos extras do mês (bônus separado)
+  const extras = (pontosExtras || [])
     .filter(p => p.user_id === userId && p.mes === mesAtual)
     .reduce((s, p) => s + p.pontos, 0);
+
+  // Penalidades de advertências do mês
+  const penalidades = (advertencias || [])
+    .filter(a => a.user_id === userId && a.mes === mesAtual)
+    .reduce((s, a) => s + (a.penalidade || 0), 0);
 
   const realizadas = ue.filter(e => e.status === "concluida").length;
   const perdidas   = ue.filter(e => e.status === "nao_concluida").length;
 
-  if (!ut.length) return { index: 0, obtidos: 0, possiveis: 0, realizadas, perdidas, extras };
+  if (!ut.length) return { index: 0, obtidos: 0, possiveis: 0, realizadas, perdidas, extras, penalidades };
 
-  // extras NÃO entram no índice — são bônus separado (Tese B)
+  // Penalidades reduzem os pontos obtidos; extras são bônus separado
+  const obtidosLiquido = Math.max(obtidos - penalidades, 0);
   const index = possiveis > 0
-    ? Math.min(Math.round((obtidos / possiveis) * 100), 100)
+    ? Math.min(Math.round((obtidosLiquido / possiveis) * 100), 100)
     : 0;
-  return { index, obtidos, possiveis, realizadas, perdidas, extras };
+  return { index, obtidos: obtidosLiquido, possiveis, realizadas, perdidas, extras, penalidades };
 }
 
 export function getBonus(index, rules) {

@@ -9,14 +9,16 @@ const ADMIN_NAV = [
   { id:"tarefas",       label:"Tarefas",         icon:"task"     },
   { id:"execucoes",     label:"Execuções",        icon:"chart"    },
   { id:"relatorios",    label:"Relatórios",      icon:"download" },
-  { id:"pontos-extras", label:"Pontos Extras",   icon:"star"     },
-  { id:"config",        label:"Configurações",   icon:"settings" },
+  { id:"pontos-extras",  label:"Pontos Extras",   icon:"star"      },
+  { id:"advertencias",  label:"Advertências",    icon:"alert_tri" },
+  { id:"config",         label:"Configurações",   icon:"settings"  },
 ];
 
 const LIDER_NAV = [
-  { id:"minhas-tarefas", label:"Minhas Tarefas", icon:"task"   },
-  { id:"painel-equipe",  label:"Minha Equipe",   icon:"users"  },
-  { id:"meu-desempenho", label:"Meu Desempenho", icon:"chart"  },
+  { id:"minhas-tarefas", label:"Minhas Tarefas", icon:"task"      },
+  { id:"painel-equipe",  label:"Minha Equipe",   icon:"users"     },
+  { id:"advertencias",   label:"Advertências",   icon:"alert_tri" },
+  { id:"meu-desempenho", label:"Meu Desempenho", icon:"chart"     },
 ];
 
 const USER_NAV = [

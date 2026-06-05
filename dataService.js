@@ -262,6 +262,17 @@ export async function fetchPontosExtras() {
   return data ?? [];
 }
 
+export async function deletePontosExtras(id) {
+  if (!USE_SUPABASE) {
+    const all = store.get("go_pontos", []).filter(p => p.id !== id);
+    store.set("go_pontos", all);
+    return true;
+  }
+  const { error } = await supabase.from("pontos_extras").delete().eq("id", id);
+  if (error) handleError("deletePontosExtras", error);
+  return true;
+}
+
 export async function insertPontosExtras(entry) {
   if (!USE_SUPABASE) {
     const all = [...store.get("go_pontos", []), entry];
@@ -275,6 +286,38 @@ export async function insertPontosExtras(entry) {
     .maybeSingle();
   if (error) handleError("insertPontosExtras", error);
   return data ?? entry;
+}
+
+// ─── ADVERTÊNCIAS ────────────────────────────────────────────────────────────
+export async function fetchAdvertencias() {
+  if (!USE_SUPABASE) return store.get("go_adv", []);
+  await ensureSession();
+  const { data, error } = await supabase
+    .from("advertencias").select("*").order("created_at", { ascending: false });
+  if (error) { console.error("[fetchAdvertencias]", error.message); return []; }
+  return data ?? [];
+}
+
+export async function insertAdvertencia(entry) {
+  if (!USE_SUPABASE) {
+    const all = [...store.get("go_adv", []), entry];
+    store.set("go_adv", all);
+    return entry;
+  }
+  const { data, error } = await supabase
+    .from("advertencias").insert(entry).select().maybeSingle();
+  if (error) handleError("insertAdvertencia", error);
+  return data ?? entry;
+}
+
+export async function deleteAdvertencia(id) {
+  if (!USE_SUPABASE) {
+    store.set("go_adv", store.get("go_adv", []).filter(a => a.id !== id));
+    return true;
+  }
+  const { error } = await supabase.from("advertencias").delete().eq("id", id);
+  if (error) handleError("deleteAdvertencia", error);
+  return true;
 }
 
 export { USE_SUPABASE };
