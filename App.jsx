@@ -58,7 +58,8 @@ export default function App() {
   // ─── LOAD DATA ──────────────────────────────────────────────
   const loadAll = useCallback(async () => {
     if (!USE_SUPABASE) { initStorage(); return; }
-    const [u, t, e, b, pe, er, adv] = await Promise.all([
+    // Usa allSettled para que uma falha isolada não zerasse todos os dados
+    const [ru, rt, re, rb, rpe, rer, radv] = await Promise.allSettled([
       fetchUsers(),
       fetchTasks(),
       fetchExecucoes(),
@@ -67,13 +68,21 @@ export default function App() {
       fetchExtraRules(),
       fetchAdvertencias(),
     ]);
-    setUsers(u);
-    setTasks(t);
-    setExecutions(e);
-    setBonusRules(b.length ? b : BONUS_RULES);
-    setPontosExtras(pe);
-    setExtraRules(er.length ? er : DEFAULT_EXTRA_RULES);
-    setAdvertencias(adv);
+
+    if (ru.status  === "fulfilled" && ru.value?.length)   setUsers(ru.value);
+    if (rt.status  === "fulfilled")                       setTasks(rt.value ?? []);
+    if (re.status  === "fulfilled")                       setExecutions(re.value ?? []);
+    if (rb.status  === "fulfilled" && rb.value?.length)   setBonusRules(rb.value);
+    else                                                  setBonusRules(BONUS_RULES);
+    if (rpe.status === "fulfilled")                       setPontosExtras(rpe.value ?? []);
+    if (rer.status === "fulfilled" && rer.value?.length)  setExtraRules(rer.value);
+    else                                                  setExtraRules(DEFAULT_EXTRA_RULES);
+    if (radv.status === "fulfilled")                      setAdvertencias(radv.value ?? []);
+
+    // Log de erros sem quebrar a aplicação
+    [ru,rt,re,rb,rpe,rer,radv].forEach((r,i) => {
+      if (r.status === "rejected") console.warn(`[loadAll] fetch ${i} failed:`, r.reason?.message);
+    });
   }, []);
 
   useEffect(() => {
