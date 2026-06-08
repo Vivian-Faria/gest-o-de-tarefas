@@ -175,11 +175,19 @@ export async function upsertTask(task) {
 export async function fetchExecucoes() {
   if (!USE_SUPABASE) return store.get("go_execs", []);
   await ensureSession();
+
+  // Busca apenas os últimos 3 meses para evitar timeout
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const fromDate = threeMonthsAgo.toISOString().split("T")[0];
+
   const { data, error } = await supabase
     .from("execucoes")
-    .select("*")
-    .order("timestamp", { ascending: false })
-    .limit(1000);
+    .select("id, task_id, user_id, date, timestamp, status, observacao, photo_url")
+    .gte("date", fromDate)
+    .order("date", { ascending: false })
+    .limit(500);
+
   if (error) {
     console.error("[fetchExecucoes]", error.message, error.code);
     return [];
