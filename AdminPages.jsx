@@ -8,7 +8,7 @@ import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
 export function Colaboradores({ users, setUsers, toast, tasks, executions, pontosExtras }) {
-  const blank = { name:"", email:"", password:"", cargo:"", setor:"", nivel:"operador", role:"colaborador", ativo:true };
+  const blank = { name:"", email:"", password:"", cargo:"", setor:"", nivel:"operador", role:"colaborador", ativo:true, elegivel_bonus:true };
   const [modal, setModal]         = useState(false);
   const [editing, setEditing]     = useState(null);
   const [form, setForm]           = useState(blank);
@@ -139,6 +139,7 @@ export function Colaboradores({ users, setUsers, toast, tasks, executions, ponto
             <Field label="Perfil de acesso" value={form.role} onChange={f("role")} options={[{ value:"colaborador", label:"Colaborador Operacional" },{ value:"admin", label:"Administrador" }]} />
           </div>
           <div style={{ gridColumn:"1/-1" }}><Field type="checkbox" value={form.ativo} onChange={f("ativo")} placeholder="Usuário ativo no sistema" /></div>
+          <div style={{ gridColumn:"1/-1" }}><Field type="checkbox" value={form.elegivel_bonus !== false} onChange={f("elegivel_bonus")} placeholder="Elegível para bonificação (participa do sistema de bônus)" /></div>
         </div>
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end", paddingTop:8, borderTop:`1px solid ${T.slate[100]}` }}>
           <Btn variant="secondary" onClick={() => setModal(false)}>Cancelar</Btn>
@@ -495,13 +496,19 @@ export function Relatorios({ users, tasks, executions, bonusRules }) {
                   </div>
                 </td>
                 <td style={{ padding:"14px 16px" }}>
-                  <span style={{ fontSize:14, fontWeight:800, color:u.bonus>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus}</span>
+                  {u.elegivel
+                    ? <span style={{ fontSize:14, fontWeight:800, color:u.bonus>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus}</span>
+                    : <span style={{ fontSize:12, color:T.slate[300] }}>—</span>}
                 </td>
                 <td style={{ padding:"14px 16px" }}>
-                  <span style={{ fontSize:14, fontWeight:800, color:u.bonusExtra>0?T.amber[500]:T.slate[300] }}>R$ {u.bonusExtra}</span>
+                  {u.elegivel
+                    ? <span style={{ fontSize:14, fontWeight:800, color:u.bonusExtra>0?T.amber[500]:T.slate[300] }}>R$ {u.bonusExtra}</span>
+                    : <span style={{ fontSize:12, color:T.slate[300] }}>—</span>}
                 </td>
                 <td style={{ padding:"14px 16px" }}>
-                  <span style={{ fontSize:15, fontWeight:900, color:(u.bonus+u.bonusExtra)>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus + u.bonusExtra}</span>
+                  {u.elegivel
+                    ? <span style={{ fontSize:15, fontWeight:900, color:(u.bonus+u.bonusExtra)>0?T.emerald[500]:T.slate[300] }}>R$ {u.bonus + u.bonusExtra}</span>
+                    : <span style={{ fontSize:12, color:T.slate[300] }}>Não elegível</span>}
                 </td>
               </tr>
             ))}

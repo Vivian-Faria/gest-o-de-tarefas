@@ -202,9 +202,10 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
 
 // ─── MEU DESEMPENHO ───────────────────────────────────────────────────────────
 export function MeuDesempenho({ user, users, tasks, executions, bonusRules, pontosExtras, extraRules }) {
-  const p      = calcPerf(user.id, executions, tasks, pontosExtras);
-  const bonus  = getBonus(p.index, bonusRules);
-  const sColor = statusColor(p.index);
+  const p         = calcPerf(user.id, executions, tasks, pontosExtras);
+  const elegivel  = user.elegivel_bonus !== false;
+  const bonus     = elegivel ? getBonus(p.index, bonusRules) : 0;
+  const sColor    = statusColor(p.index);
   const mesAtual = new Date().toISOString().slice(0, 7);
   const totalExtras = (pontosExtras || [])
     .filter(pe => pe.user_id === user.id && pe.mes === mesAtual)
@@ -238,22 +239,28 @@ export function MeuDesempenho({ user, users, tasks, executions, bonusRules, pont
           <div style={{ fontSize:14, color:T.slate[500], marginTop:6 }}>{p.obtidos} de {p.possiveis} pontos · #{myRank} no ranking</div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <div style={{ background:"#fff", borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.slate[100]}` }}>
-              <div style={{ fontSize:10, color:T.slate[400], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Tarefas</div>
-              <div style={{ fontSize:22, fontWeight:900, color:bonus>0?T.emerald[500]:T.slate[300], marginTop:2 }}>R$ {bonus}</div>
-            </div>
-            {bonusExtra > 0 && (
-              <div style={{ background:T.amber[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.amber[200]}` }}>
-                <div style={{ fontSize:10, color:T.amber[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Extras</div>
-                <div style={{ fontSize:22, fontWeight:900, color:T.amber[500], marginTop:2 }}>R$ {bonusExtra}</div>
+          {elegivel ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ background:"#fff", borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.slate[100]}` }}>
+                <div style={{ fontSize:10, color:T.slate[400], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Tarefas</div>
+                <div style={{ fontSize:22, fontWeight:900, color:bonus>0?T.emerald[500]:T.slate[300], marginTop:2 }}>R$ {bonus}</div>
               </div>
-            )}
-            <div style={{ background:T.emerald[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.emerald[200]}` }}>
-              <div style={{ fontSize:10, color:T.emerald[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Total Estimado</div>
-              <div style={{ fontSize:24, fontWeight:900, color:T.emerald[500], marginTop:2 }}>R$ {bonus + bonusExtra}</div>
+              {bonusExtra > 0 && (
+                <div style={{ background:T.amber[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.amber[200]}` }}>
+                  <div style={{ fontSize:10, color:T.amber[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Bônus Extras</div>
+                  <div style={{ fontSize:22, fontWeight:900, color:T.amber[500], marginTop:2 }}>R$ {bonusExtra}</div>
+                </div>
+              )}
+              <div style={{ background:T.emerald[50], borderRadius:14, padding:"12px 18px", textAlign:"center", border:`1px solid ${T.emerald[200]}` }}>
+                <div style={{ fontSize:10, color:T.emerald[600], fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>Total Estimado</div>
+                <div style={{ fontSize:24, fontWeight:900, color:T.emerald[500], marginTop:2 }}>R$ {bonus + bonusExtra}</div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ background:T.slate[50], borderRadius:14, padding:"14px 18px", textAlign:"center", border:`1px solid ${T.slate[200]}` }}>
+              <div style={{ fontSize:11, color:T.slate[400] }}>Não participa do sistema de bonificação</div>
+            </div>
+          )}
           {nextBonus && (
             <div style={{ background:T.amber[50], border:`1px solid ${T.amber[200]}`, borderRadius:12, padding:"10px 16px", textAlign:"center" }}>
               <div style={{ fontSize:11, color:T.amber[600], fontWeight:700 }}>Próxima faixa em {nextBonus.min - p.index}%</div>
