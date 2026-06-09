@@ -86,52 +86,55 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const init = async () => {
-      if (!USE_SUPABASE) {
-        initStorage();
-        setUsers(localStore.get("go_users", []));
-        setTasks(localStore.get("go_tasks", []));
-        setExecutions(localStore.get("go_execs", []));
-        setBonusRules(localStore.get("go_bonus", BONUS_RULES));
+    if (!USE_SUPABASE) {
+      // Modo localStorage
+      initStorage();
+      setUsers(localStore.get("go_users", []));
+      setTasks(localStore.get("go_tasks", []));
+      setExecutions(localStore.get("go_execs", []));
+      setBonusRules(localStore.get("go_bonus", BONUS_RULES));
+      setLoading(false);
+      return;
+    }
+
+    // Modo Supabase — aguarda o evento de sessão confirmado pelo SDK
+    // O onAuthStateChange dispara INITIAL_SESSION com a sessão restaurada do localStorage
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[auth] event:", event, "session:", !!session);
+
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setActive(null);
         setLoading(false);
         return;
       }
 
-      // 1. Tenta restaurar sessão existente
-      let session = null;
-      try {
-        const { data } = await supabase.auth.getSession();
-        session = data?.session;
-        // Se não tem sessão, tenta refresh
-        if (!session) {
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          session = refreshed?.session;
-        }
-      } catch(e) {
-        console.warn("[init] session restore failed:", e.message);
-      }
-
-      if (session) {
+      if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session) {
         try {
           const { data: profile } = await supabase
             .from("usuarios")
             .select("*")
             .eq("auth_id", session.user.id)
             .maybeSingle();
+
           if (profile && profile.ativo) {
             setUser(profile);
-            setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
+            setActive(prev => prev || (profile.role === "admin" ? "dashboard" : "minhas-tarefas"));
+            await loadAll();
           }
         } catch(e) {
-          console.warn("[init] profile fetch failed:", e.message);
+          console.warn("[auth] profile/load error:", e.message);
         }
-        // 2. Aguarda um tick para garantir que a sessão está no cliente Supabase
-        await new Promise(r => setTimeout(r, 100));
-        await loadAll();
+        setLoading(false);
       }
-      setLoading(false);
-    };
-    init();
+
+      if (event === "INITIAL_SESSION" && !session) {
+        setLoading(false);
+      }
+    });
+
+    // Cleanup
+    return () => { subscription?.unsubscribe(); };
   }, [loadAll]);
 
   // ─── AUTH ───────────────────────────────────────────────────
@@ -141,18 +144,7 @@ export default function App() {
     try { await loadAll(); } finally { setLoading(false); }
   }, [loadAll]);
 
-  // Restaura sessão Supabase ao recarregar a página
-  useEffect(() => {
-    if (!USE_SUPABASE) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[auth] event:", event, "session:", !!session);
-      if (event === "SIGNED_OUT" || !session) {
-        setUser(null);
-        setActive(null);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+
 
   const login = useCallback(async (email, password) => {
     const u = await loginUser(email, password);
