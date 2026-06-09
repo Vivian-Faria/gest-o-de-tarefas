@@ -256,11 +256,7 @@ export function MeuDesempenho({ user, users, tasks, executions, bonusRules, pont
                 <div style={{ fontSize:24, fontWeight:900, color:T.emerald[500], marginTop:2 }}>R$ {bonus + bonusExtra}</div>
               </div>
             </div>
-          ) : (
-            <div style={{ background:T.slate[50], borderRadius:14, padding:"14px 18px", textAlign:"center", border:`1px solid ${T.slate[200]}` }}>
-              <div style={{ fontSize:11, color:T.slate[400] }}>Não participa do sistema de bonificação</div>
-            </div>
-          )}
+          ) : null}
           {nextBonus && (
             <div style={{ background:T.amber[50], border:`1px solid ${T.amber[200]}`, borderRadius:12, padding:"10px 16px", textAlign:"center" }}>
               <div style={{ fontSize:11, color:T.amber[600], fontWeight:700 }}>Próxima faixa em {nextBonus.min - p.index}%</div>
