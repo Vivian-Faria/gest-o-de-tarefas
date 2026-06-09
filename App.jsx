@@ -87,7 +87,6 @@ export default function App() {
 
   useEffect(() => {
     if (!USE_SUPABASE) {
-      // Modo localStorage
       initStorage();
       setUsers(localStore.get("go_users", []));
       setTasks(localStore.get("go_tasks", []));
@@ -97,20 +96,18 @@ export default function App() {
       return;
     }
 
-    // Modo Supabase — aguarda o evento de sessão confirmado pelo SDK
-    // O onAuthStateChange dispara INITIAL_SESSION com a sessão restaurada do localStorage
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[auth] event:", event, "session:", !!session);
+    // Timeout de segurança — garante que loading nunca trava infinitamente
+    const safetyTimer = setTimeout(() => {
+      console.warn("[App] loading timeout — forçando setLoading(false)");
+      setLoading(false);
+    }, 10000);
 
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        setActive(null);
-        setLoading(false);
-        return;
-      }
+    const init = async () => {
+      try {
+        // Deixa o SDK do Supabase restaurar a sessão do localStorage
+        const { data: { session } } = await supabase.auth.getSession();
 
-      if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session) {
-        try {
+        if (session) {
           const { data: profile } = await supabase
             .from("usuarios")
             .select("*")
@@ -119,22 +116,30 @@ export default function App() {
 
           if (profile && profile.ativo) {
             setUser(profile);
-            setActive(prev => prev || (profile.role === "admin" ? "dashboard" : "minhas-tarefas"));
+            setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
             await loadAll();
           }
-        } catch(e) {
-          console.warn("[auth] profile/load error:", e.message);
         }
+      } catch(e) {
+        console.warn("[init] error:", e.message);
+      } finally {
+        clearTimeout(safetyTimer);
         setLoading(false);
       }
+    };
 
-      if (event === "INITIAL_SESSION" && !session) {
-        setLoading(false);
+    init();
+
+    // Monitora logout e token refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[auth] event:", event);
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setActive(null);
       }
     });
 
-    // Cleanup
-    return () => { subscription?.unsubscribe(); };
+    return () => { subscription?.unsubscribe(); clearTimeout(safetyTimer); };
   }, [loadAll]);
 
   // ─── AUTH ───────────────────────────────────────────────────
