@@ -179,9 +179,11 @@ export async function fetchExecucoes() {
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   const fromDate = threeMonthsAgo.toISOString().split("T")[0];
 
+  // NÃO busca photo_url na lista — fotos são grandes (base64) e causam timeout mobile
+  // A foto é buscada individualmente só quando o admin clica em "Ver foto"
   const { data, error } = await supabase
     .from("execucoes")
-    .select("id, task_id, user_id, date, timestamp, status, observacao, photo_url")
+    .select("id, task_id, user_id, date, timestamp, status, observacao")
     .gte("date", fromDate)
     .order("date", { ascending: false })
     .limit(500);
@@ -192,6 +194,20 @@ export async function fetchExecucoes() {
   }
   console.log("[fetchExecucoes] total:", data?.length ?? 0);
   return (data ?? []).map(rowToExec);
+}
+
+export async function fetchExecucaoPhoto(id) {
+  if (!USE_SUPABASE) {
+    const all = store.get("go_execs", []);
+    return all.find(e => e.id === id)?.photo || null;
+  }
+  const { data, error } = await supabase
+    .from("execucoes")
+    .select("id, photo_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.photo_url;
 }
 
 export async function insertExecucao(exec) {

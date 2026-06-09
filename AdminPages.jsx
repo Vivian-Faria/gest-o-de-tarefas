@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { T, CAT_COLORS } from "./tokens.js";
 import { store, initials, fmtDate, fmtTime, calcPerf, getBonus, statusColor, getMonthRange, monthLabel, todayStr } from "./helpers.js";
+import { fetchExecucaoPhoto } from "./dataService.js";
 import { Ic } from "./Icon.jsx";
 import { HistoricoDashboard } from "./HistoricoDashboard.jsx";
 import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
@@ -347,6 +348,15 @@ export function Tarefas({ tasks, setTasks, users, toast }) {
 export function Execucoes({ executions, tasks, users }) {
   const [filter, setFilter] = useState({ user:"", date:todayStr(), status:"" });
   const [photoModal, setPhotoModal] = useState(null);
+  const [loadingPhoto, setLoadingPhoto] = useState(false);
+
+  const openPhoto = async (exec) => {
+    setLoadingPhoto(true);
+    setPhotoModal("loading");
+    const photo = exec.photo || await fetchExecucaoPhoto(exec.id);
+    setPhotoModal(photo);
+    setLoadingPhoto(false);
+  };
   const colabs = users.filter(u => u.role === "colaborador");
 
   const filtered = executions.filter(e => {
@@ -411,11 +421,9 @@ export function Execucoes({ executions, tasks, users }) {
                 </div>
                 {e.observacao && <div style={{ fontSize:12, color:T.slate[500], marginTop:5, fontStyle:"italic", background:T.slate[50], padding:"4px 10px", borderRadius:6, display:"inline-block" }}>"{e.observacao}"</div>}
               </div>
-              {e.photo && (
-                <button onClick={() => setPhotoModal(e.photo)} style={{ background:T.sky[50], border:`1px solid ${T.sky[200]}`, borderRadius:8, padding:"7px 13px", cursor:"pointer", fontSize:12, color:T.sky[600], fontWeight:700, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", flexShrink:0 }}>
-                  <Ic n="photo" s={14} c={T.sky[500]}/>Evidência
-                </button>
-              )}
+              <button onClick={() => openPhoto(e)} style={{ background:T.sky[50], border:`1px solid ${T.sky[200]}`, borderRadius:8, padding:"7px 13px", cursor:"pointer", fontSize:12, color:T.sky[600], fontWeight:700, display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", flexShrink:0 }}>
+                <Ic n="photo" s={14} c={T.sky[500]}/>{loadingPhoto && photoModal==="loading" ? "..." : "Evidência"}
+              </button>
               <Chip color={ok?T.emerald[600]:T.rose[600]} bg={ok?T.emerald[50]:T.rose[50]}>{ok?"Concluída":"Não concluída"}</Chip>
             </div>
           );
@@ -423,7 +431,13 @@ export function Execucoes({ executions, tasks, users }) {
       </div>
 
       <Modal open={!!photoModal} onClose={() => setPhotoModal(null)} title="Evidência Fotográfica">
-        {photoModal && <img src={photoModal} alt="Evidência" style={{ width:"100%", borderRadius:12, maxHeight:420, objectFit:"contain", background:T.slate[50] }}/>}
+        {photoModal === "loading" ? (
+          <div style={{ textAlign:"center", padding:40, color:T.slate[400] }}>Carregando foto...</div>
+        ) : photoModal ? (
+          <img src={photoModal} alt="Evidência" style={{ width:"100%", borderRadius:12, maxHeight:420, objectFit:"contain", background:T.slate[50] }}/>
+        ) : (
+          <div style={{ textAlign:"center", padding:40, color:T.slate[400] }}>Sem foto de evidência</div>
+        )}
       </Modal>
     </Page>
   );
