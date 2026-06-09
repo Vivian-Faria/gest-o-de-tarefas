@@ -148,7 +148,6 @@ export async function upsertUser(user) {
 // ─── TAREFAS ──────────────────────────────────────────────────────────────────
 export async function fetchTasks() {
   if (!USE_SUPABASE) return store.get("go_tasks", []);
-  await ensureSession();
   const { data, error } = await supabase.from("tarefas").select("*").order("horario");
   if (error) { console.error("[fetchTasks]", error.message); return []; }
   return (data ?? []).map(rowToTask);
@@ -174,7 +173,6 @@ export async function upsertTask(task) {
 // ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
 export async function fetchExecucoes() {
   if (!USE_SUPABASE) return store.get("go_execs", []);
-  await ensureSession();
 
   // Busca apenas os últimos 3 meses para evitar timeout
   const threeMonthsAgo = new Date();
@@ -261,7 +259,6 @@ export async function saveExtraRules(rules) {
 // ─── PONTOS EXTRAS ───────────────────────────────────────────────────────────
 export async function fetchPontosExtras() {
   if (!USE_SUPABASE) return store.get("go_pontos", []);
-  await ensureSession();
   const { data, error } = await supabase
     .from("pontos_extras")
     .select("*")
@@ -299,7 +296,6 @@ export async function insertPontosExtras(entry) {
 // ─── ADVERTÊNCIAS ────────────────────────────────────────────────────────────
 export async function fetchAdvertencias() {
   if (!USE_SUPABASE) return store.get("go_adv", []);
-  await ensureSession();
   const { data, error } = await supabase
     .from("advertencias").select("*").order("created_at", { ascending: false });
   if (error) { console.error("[fetchAdvertencias]", error.message); return []; }
