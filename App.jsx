@@ -96,21 +96,39 @@ export default function App() {
         setLoading(false);
         return;
       }
-      // Restaura sessão existente (token salvo no localStorage pelo Supabase)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Busca perfil do usuário logado
-        const { data: profile } = await supabase
-          .from("usuarios")
-          .select("*")
-          .eq("auth_id", session.user.id)
-          .maybeSingle();
-        if (profile && profile.ativo) {
-          setUser(profile);
-          setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
+
+      // 1. Tenta restaurar sessão existente
+      let session = null;
+      try {
+        const { data } = await supabase.auth.getSession();
+        session = data?.session;
+        // Se não tem sessão, tenta refresh
+        if (!session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          session = refreshed?.session;
         }
+      } catch(e) {
+        console.warn("[init] session restore failed:", e.message);
       }
-      await loadAll();
+
+      if (session) {
+        try {
+          const { data: profile } = await supabase
+            .from("usuarios")
+            .select("*")
+            .eq("auth_id", session.user.id)
+            .maybeSingle();
+          if (profile && profile.ativo) {
+            setUser(profile);
+            setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
+          }
+        } catch(e) {
+          console.warn("[init] profile fetch failed:", e.message);
+        }
+        // 2. Aguarda um tick para garantir que a sessão está no cliente Supabase
+        await new Promise(r => setTimeout(r, 100));
+        await loadAll();
+      }
       setLoading(false);
     };
     init();
