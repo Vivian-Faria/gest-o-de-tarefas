@@ -257,7 +257,7 @@ export function MeuDesempenho({ user, users, tasks, executions, bonusRules, pont
               </div>
             </div>
           ) : null}
-          {nextBonus && (
+          {elegivel && nextBonus && (
             <div style={{ background:T.amber[50], border:`1px solid ${T.amber[200]}`, borderRadius:12, padding:"10px 16px", textAlign:"center" }}>
               <div style={{ fontSize:11, color:T.amber[600], fontWeight:700 }}>Próxima faixa em {nextBonus.min - p.index}%</div>
               <div style={{ fontSize:14, fontWeight:800, color:T.amber[500] }}>R$ {nextBonus.valor}</div>
