@@ -17,9 +17,20 @@ export function initStorage() {
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────────────────────
-export const todayStr    = () => new Date().toISOString().split("T")[0];
-export const fmtDate     = (d) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
-export const fmtTime     = (d) => new Date(d).toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+export const todayStr    = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+export const fmtDate     = (d) => {
+  if (!d) return "";
+  const [y,m,dd] = String(d).split("T")[0].split("-");
+  return new Date(Number(y), Number(m)-1, Number(dd)).toLocaleDateString("pt-BR");
+};
+export const fmtTime     = (d) => {
+  if (!d) return "";
+  // Supabase retorna "2026-06-17 23:54+00" — substitui espaço por T
+  return new Date(String(d).replace(" ","T")).toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+};
 export const fmtDateLong = () => new Date().toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long" });
 export const monthLabel  = () => new Date().toLocaleDateString("pt-BR", { month:"long", year:"numeric" });
 
