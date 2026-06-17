@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { T, CAT_COLORS } from "./tokens.js";
-import { calcPerf, getBonus, statusColor, fmtDate, fmtTime, getMonthRange, monthLabel, todayStr } from "./helpers.js";
+import { calcPerf, getBonus, statusColor, fmtDate, fmtTime, getMonthRange, monthLabel } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar, Chip, ProgressRing, StatCard, Page, Modal, Empty } from "./UI.jsx";
 import { fetchExecucaoPhoto } from "./dataService.js";
@@ -22,8 +22,6 @@ function ColabDetail({ colab, tasks, executions, onClose, bonusRules, pontosExtr
   const [photoModal, setPhotoModal] = useState(null);
   const [loadingPhoto, setLoadingPhoto] = useState(false);
   const { first, last } = getMonthRange(0);
-  const today = todayStr();
-
   const myTasks = tasks.filter(t => t.responsavelId === colab.id && t.ativo);
   const myExecs = executions
     .filter(e => e.userId === colab.id && e.date >= first && e.date <= last)
@@ -31,13 +29,6 @@ function ColabDetail({ colab, tasks, executions, onClose, bonusRules, pontosExtr
 
   const p     = calcPerf(colab.id, executions, tasks, pontosExtras);
   const bonus = getBonus(p.index, bonusRules);
-
-  // Para cada tarefa, verifica status de hoje
-  const taskStatus = (task) => {
-    const todayExecs = myExecs.filter(e => e.taskId === task.id && e.date === today);
-    if (todayExecs.length === 0) return "pendente";
-    return todayExecs[0].status === "concluida" ? "concluida" : "nao_concluida";
-  };
 
   const openPhoto = async (exec) => {
     setLoadingPhoto(true);
@@ -80,10 +71,7 @@ function ColabDetail({ colab, tasks, executions, onClose, bonusRules, pontosExtr
           {myTasks.length === 0 && <Empty icon="task" title="Nenhuma tarefa atribuída" sub=""/>}
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {myTasks.map(t => {
-              const st  = taskStatus(t);
-              const cc  = CAT_COLORS[t.categoria] || CAT_COLORS["Outro"];
-              const stColor = st==="concluida" ? T.emerald[500] : st==="nao_concluida" ? T.rose[500] : T.slate[300];
-              const stLabel = st==="concluida" ? "✓ Concluída hoje" : st==="nao_concluida" ? "✗ Não concluída" : "⏳ Pendente";
+              const cc = CAT_COLORS[t.categoria] || CAT_COLORS["Outro"];
               return (
                 <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, border:`1px solid ${T.slate[100]}`, background:"#fff" }}>
                   <div style={{ width:4, height:40, borderRadius:2, background:cc.dot, flexShrink:0 }}/>
@@ -93,9 +81,9 @@ function ColabDetail({ colab, tasks, executions, onClose, bonusRules, pontosExtr
                       <Chip color={cc.text} bg={cc.bg} dot>{t.categoria}</Chip>
                       <Chip color={T.slate[500]} bg={T.slate[50]}>{t.horario}</Chip>
                       <Chip color={T.indigo[600]} bg={T.indigo[50]}>{t.peso} pts</Chip>
+                      <Chip color={T.slate[400]} bg={T.slate[50]}>{t.frequencia}</Chip>
                     </div>
                   </div>
-                  <div style={{ fontSize:11, fontWeight:700, color:stColor, flexShrink:0 }}>{stLabel}</div>
                 </div>
               );
             })}
