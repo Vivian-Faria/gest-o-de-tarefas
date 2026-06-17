@@ -3,32 +3,190 @@ import { T, CAT_COLORS } from "./tokens.js";
 import { calcPerf, getBonus, statusColor, fmtDate, fmtTime, getMonthRange, monthLabel, todayStr } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar, Chip, ProgressRing, StatCard, Page, Modal, Empty } from "./UI.jsx";
+import { fetchExecucaoPhoto } from "./dataService.js";
 
-// ─── NÍVEIS ──────────────────────────────────────────────────────────────────
 const NIVEL_LABEL = { operador:"Operador", atendente:"Atendente", lider:"Líder", supervisor:"Supervisor", admin:"Admin" };
-const NIVEL_ORDER = { operador:1, atendente:1, lider:2, supervisor:3, admin:4 };
 
-// Retorna quais usuários o usuário logado pode ver
 function getSubordinados(user, users) {
   const nivel = user.nivel || "operador";
-  if (nivel === "admin" || nivel === "supervisor") {
+  if (nivel === "admin" || nivel === "supervisor")
     return users.filter(u => u.id !== user.id && u.role !== "admin");
-  }
-  if (nivel === "lider") {
+  if (nivel === "lider")
     return users.filter(u => (u.nivel === "operador" || u.nivel === "atendente") && u.ativo);
-  }
   return [];
 }
 
-// ─── PAINEL DA EQUIPE ────────────────────────────────────────────────────────
-export function PainelEquipe({ user, users, tasks, executions, bonusRules }) {
-  const [selected, setSelected] = useState(null);
+// ─── DETALHE DO COLABORADOR ───────────────────────────────────────────────────
+function ColabDetail({ colab, tasks, executions, onClose, bonusRules, pontosExtras }) {
+  const [tab, setTab]             = useState("tarefas"); // tarefas | execucoes | desempenho
   const [photoModal, setPhotoModal] = useState(null);
-  const subordinados = getSubordinados(user, users);
+  const [loadingPhoto, setLoadingPhoto] = useState(false);
   const { first, last } = getMonthRange(0);
+  const today = todayStr();
+
+  const myTasks = tasks.filter(t => t.responsavelId === colab.id && t.ativo);
+  const myExecs = executions
+    .filter(e => e.userId === colab.id && e.date >= first && e.date <= last)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  const p     = calcPerf(colab.id, executions, tasks, pontosExtras);
+  const bonus = getBonus(p.index, bonusRules);
+
+  // Para cada tarefa, verifica status de hoje
+  const taskStatus = (task) => {
+    const todayExecs = myExecs.filter(e => e.taskId === task.id && e.date === today);
+    if (todayExecs.length === 0) return "pendente";
+    return todayExecs[0].status === "concluida" ? "concluida" : "nao_concluida";
+  };
+
+  const openPhoto = async (exec) => {
+    setLoadingPhoto(true);
+    setPhotoModal("loading");
+    const photo = exec.photo || await fetchExecucaoPhoto(exec.id);
+    setPhotoModal(photo || "sem-foto");
+    setLoadingPhoto(false);
+  };
+
+  const TAB_BTN = ({ id, label }) => (
+    <button onClick={() => setTab(id)} style={{
+      flex:1, padding:"8px 4px", border:"none", borderBottom:`2px solid ${tab===id?T.indigo[500]:"transparent"}`,
+      background:"transparent", fontFamily:"inherit", fontSize:13, fontWeight:tab===id?700:500,
+      color:tab===id?T.indigo[600]:T.slate[400], cursor:"pointer", transition:"all 0.15s"
+    }}>{label}</button>
+  );
+
+  return (
+    <Modal open={true} onClose={onClose} title={colab.name} width={580}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20, padding:"14px 16px", background:T.slate[50], borderRadius:12 }}>
+        <Avatar user={colab} size={48}/>
+        <div style={{ flex:1 }}>
+          <div style={{ fontWeight:700, fontSize:15, color:T.slate[800] }}>{colab.name}</div>
+          <div style={{ fontSize:12, color:T.slate[400] }}>{NIVEL_LABEL[colab.nivel] || colab.cargo} · {colab.setor}</div>
+        </div>
+        <ProgressRing value={p.index} size={52} sw={5}/>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", borderBottom:`1px solid ${T.slate[100]}`, marginBottom:16 }}>
+        <TAB_BTN id="tarefas"   label={`Tarefas (${myTasks.length})`}/>
+        <TAB_BTN id="execucoes" label={`Execuções (${myExecs.length})`}/>
+        <TAB_BTN id="desempenho" label="Desempenho"/>
+      </div>
+
+      {/* ── TAB TAREFAS ── */}
+      {tab === "tarefas" && (
+        <div>
+          {myTasks.length === 0 && <Empty icon="task" title="Nenhuma tarefa atribuída" sub=""/>}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {myTasks.map(t => {
+              const st  = taskStatus(t);
+              const cc  = CAT_COLORS[t.categoria] || CAT_COLORS["Outro"];
+              const stColor = st==="concluida" ? T.emerald[500] : st==="nao_concluida" ? T.rose[500] : T.slate[300];
+              const stLabel = st==="concluida" ? "✓ Concluída hoje" : st==="nao_concluida" ? "✗ Não concluída" : "⏳ Pendente";
+              return (
+                <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, border:`1px solid ${T.slate[100]}`, background:"#fff" }}>
+                  <div style={{ width:4, height:40, borderRadius:2, background:cc.dot, flexShrink:0 }}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:13, color:T.slate[800] }}>{t.nome}</div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:4 }}>
+                      <Chip color={cc.text} bg={cc.bg} dot>{t.categoria}</Chip>
+                      <Chip color={T.slate[500]} bg={T.slate[50]}>{t.horario}</Chip>
+                      <Chip color={T.indigo[600]} bg={T.indigo[50]}>{t.peso} pts</Chip>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:11, fontWeight:700, color:stColor, flexShrink:0 }}>{stLabel}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB EXECUÇÕES ── */}
+      {tab === "execucoes" && (
+        <div>
+          {myExecs.length === 0 && <Empty icon="task" title="Nenhuma execução este mês" sub=""/>}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {myExecs.map(e => {
+              const task = tasks.find(t => t.id === e.taskId);
+              const ok   = e.status === "concluida";
+              const cc   = task ? CAT_COLORS[task.categoria] : null;
+              return (
+                <div key={e.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, border:`1px solid ${ok?T.emerald[100]:T.rose[100]}`, borderLeft:`3px solid ${ok?T.emerald[400]:T.rose[400]}`, background:ok?T.emerald[50]+"60":T.rose[50]+"60" }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:13, color:T.slate[800] }}>{task?.nome || "Tarefa removida"}</div>
+                    <div style={{ fontSize:11, color:T.slate[400], marginTop:2 }}>
+                      {fmtDate(e.date)} às {fmtTime(e.timestamp)}
+                    </div>
+                    {e.observacao && <p style={{ fontSize:11, color:T.slate[500], marginTop:3, fontStyle:"italic" }}>"{e.observacao}"</p>}
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
+                    <Chip color={ok?T.emerald[600]:T.rose[600]} bg={ok?T.emerald[50]:T.rose[50]}>
+                      {ok?"✓ Concluída":"✗ Não concluída"}
+                    </Chip>
+                    <button onClick={() => openPhoto(e)}
+                      style={{ background:T.sky[50], border:`1px solid ${T.sky[200]}`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontSize:11, color:T.sky[600], fontWeight:700, display:"flex", alignItems:"center", gap:4, fontFamily:"inherit" }}>
+                      <Ic n="photo" s={12} c={T.sky[500]}/>Foto
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB DESEMPENHO ── */}
+      {tab === "desempenho" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12 }}>
+            <div style={{ background:T.slate[50], borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.slate[400], fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Índice</div>
+              <div style={{ fontSize:28, fontWeight:900, color:statusColor(p.index) }}>{p.index}%</div>
+            </div>
+            <div style={{ background:T.slate[50], borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.slate[400], fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Bônus est.</div>
+              <div style={{ fontSize:28, fontWeight:900, color:bonus>0?T.emerald[500]:T.slate[300] }}>R$ {bonus}</div>
+            </div>
+            <div style={{ background:T.emerald[50], borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.emerald[600], fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Realizadas</div>
+              <div style={{ fontSize:28, fontWeight:900, color:T.emerald[500] }}>{p.realizadas}</div>
+            </div>
+            <div style={{ background:T.rose[50], borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.rose[600], fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Perdidas</div>
+              <div style={{ fontSize:28, fontWeight:900, color:T.rose[500] }}>{p.perdidas}</div>
+            </div>
+          </div>
+          <div style={{ background:T.slate[50], borderRadius:12, padding:"14px 16px" }}>
+            <div style={{ fontSize:12, color:T.slate[500], marginBottom:6 }}>Pontos: <b>{p.obtidos}</b> obtidos de <b>{p.possiveis}</b> possíveis no mês</div>
+            <div style={{ height:8, background:T.slate[200], borderRadius:4, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${p.index}%`, background:statusColor(p.index), borderRadius:4, transition:"width 0.6s ease" }}/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo modal */}
+      <Modal open={!!photoModal} onClose={() => setPhotoModal(null)} title="Evidência Fotográfica">
+        {photoModal === "loading" && <div style={{ textAlign:"center", padding:40, color:T.slate[400] }}>Carregando foto...</div>}
+        {photoModal === "sem-foto" && <div style={{ textAlign:"center", padding:40, color:T.slate[400] }}>Sem foto de evidência</div>}
+        {photoModal && photoModal !== "loading" && photoModal !== "sem-foto" && (
+          <img src={photoModal} alt="Evidência" style={{ width:"100%", borderRadius:12, maxHeight:420, objectFit:"contain" }}/>
+        )}
+      </Modal>
+    </Modal>
+  );
+}
+
+// ─── PAINEL DA EQUIPE ─────────────────────────────────────────────────────────
+export function PainelEquipe({ user, users, tasks, executions, bonusRules, pontosExtras }) {
+  const [selected, setSelected]   = useState(null);
+  const subordinados               = getSubordinados(user, users);
+  const { first, last }            = getMonthRange(0);
 
   const ranking = subordinados.map(u => {
-    const p = calcPerf(u.id, executions, tasks);
+    const p = calcPerf(u.id, executions, tasks, pontosExtras);
     return { ...u, ...p, bonus: getBonus(p.index, bonusRules) };
   }).sort((a, b) => b.index - a.index);
 
@@ -38,19 +196,11 @@ export function PainelEquipe({ user, users, tasks, executions, bonusRules }) {
     ? Math.round(ranking.reduce((s, u) => s + u.index, 0) / ranking.length)
     : 0;
 
-  // Execuções do colaborador selecionado
-  const selectedExecs = selected
-    ? executions
-        .filter(e => e.userId === selected.id && e.date >= first && e.date <= last)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    : [];
-
   const medals = ["🥇","🥈","🥉"];
 
   return (
     <Page title="Painel da Equipe" sub={`${subordinados.length} colaboradores · ${monthLabel()}`}>
 
-      {/* Stats gerais */}
       <div className="stat-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginBottom:24 }}>
         <StatCard label="Desempenho médio" value={`${taxaGeral}%`} icon="chart"  color={T.indigo[500]} sub="Mês atual"/>
         <StatCard label="Tarefas Concluídas" value={totalConcl}    icon="check"  color={T.emerald[500]} sub="Este mês"/>
@@ -58,22 +208,24 @@ export function PainelEquipe({ user, users, tasks, executions, bonusRules }) {
         <StatCard label="Colaboradores"      value={subordinados.length} icon="users" color={T.sky[500]}/>
       </div>
 
-      {/* Ranking da equipe */}
-      <div style={{ background:"#fff", border:`1px solid ${T.slate[100]}`, borderRadius:18, overflow:"hidden", marginBottom:24 }}>
+      <div style={{ background:"#fff", border:`1px solid ${T.slate[100]}`, borderRadius:18, overflow:"hidden" }}>
         <div style={{ padding:"18px 24px 14px", borderBottom:`1px solid ${T.slate[100]}`, display:"flex", alignItems:"center", gap:10 }}>
           <Ic n="trophy" s={18} c={T.amber[500]}/>
           <h3 style={{ fontSize:16, fontWeight:800, color:T.slate[800] }}>Ranking da Equipe</h3>
+          <span style={{ fontSize:12, color:T.slate[400], marginLeft:4 }}>Clique para ver detalhes</span>
         </div>
+
         {ranking.length === 0 && (
-          <div style={{ padding:40 }}>
-            <Empty icon="users" title="Nenhum subordinado" sub="Não há colaboradores atribuídos a você"/>
-          </div>
+          <div style={{ padding:40 }}><Empty icon="users" title="Nenhum subordinado" sub=""/></div>
         )}
+
         <div style={{ padding:"0 8px 8px" }}>
           {ranking.map((u, i) => (
             <div key={u.id}
-              onClick={() => setSelected(selected?.id === u.id ? null : u)}
-              style={{ padding:"12px 14px", borderRadius:12, margin:"4px 0", background: selected?.id === u.id ? T.indigo[50] : "transparent", border: selected?.id === u.id ? `1px solid ${T.indigo[200]}` : "1px solid transparent", cursor:"pointer", transition:"all 0.15s" }}
+              onClick={() => setSelected(u)}
+              style={{ padding:"12px 14px", borderRadius:12, margin:"4px 0", background:"transparent", border:"1px solid transparent", cursor:"pointer", transition:"all 0.15s" }}
+              onMouseOver={e => e.currentTarget.style.background = T.slate[50]}
+              onMouseOut={e  => e.currentTarget.style.background = "transparent"}
             >
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <span style={{ fontSize:i<3?16:12, fontWeight:800, color:i===0?T.amber[500]:i===1?T.slate[400]:i===2?"#b45309":T.slate[300], flexShrink:0, width:24, textAlign:"center" }}>
@@ -85,67 +237,28 @@ export function PainelEquipe({ user, users, tasks, executions, bonusRules }) {
                   <div style={{ fontSize:11, color:T.slate[400] }}>{NIVEL_LABEL[u.nivel] || u.cargo}</div>
                 </div>
                 <ProgressRing value={u.index} size={44} sw={4}/>
+                <Ic n="chevron_right" s={14} c={T.slate[300]}/>
               </div>
-              <div style={{ display:"flex", gap:14, marginTop:8, paddingLeft:34 }}>
+              <div style={{ display:"flex", gap:14, marginTop:6, paddingLeft:34 }}>
                 <span style={{ fontSize:11, fontWeight:700, color:T.emerald[500] }}>✓ {u.realizadas} feitas</span>
                 <span style={{ fontSize:11, fontWeight:700, color:T.rose[400] }}>✗ {u.perdidas} perdidas</span>
+                <span style={{ fontSize:11, fontWeight:600, color:T.slate[400] }}>{u.index}%</span>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Detalhe do colaborador selecionado */}
       {selected && (
-        <div style={{ background:"#fff", border:`1px solid ${T.indigo[100]}`, borderRadius:18, overflow:"hidden", animation:"fadeIn 0.2s ease both" }}>
-          <div style={{ padding:"18px 24px 14px", borderBottom:`1px solid ${T.slate[100]}`, display:"flex", alignItems:"center", gap:12 }}>
-            <Avatar user={selected} size={36}/>
-            <div>
-              <h3 style={{ fontSize:15, fontWeight:800, color:T.slate[800] }}>{selected.name}</h3>
-              <p style={{ fontSize:12, color:T.slate[400] }}>Execuções de {monthLabel()}</p>
-            </div>
-          </div>
-
-          {selectedExecs.length === 0 && (
-            <div style={{ padding:32 }}>
-              <Empty icon="task" title="Nenhuma execução registrada" sub="Este colaborador ainda não registrou tarefas este mês"/>
-            </div>
-          )}
-
-          <div style={{ padding:"8px 12px 12px" }}>
-            {selectedExecs.map(e => {
-              const task = tasks.find(t => t.id === e.taskId);
-              const ok   = e.status === "concluida";
-              const cc   = task ? CAT_COLORS[task.categoria] : null;
-              return (
-                <div key={e.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, border:`1px solid ${ok?T.emerald[100]:T.rose[100]}`, borderLeft:`3px solid ${ok?T.emerald[400]:T.rose[400]}`, marginBottom:8, background:ok?T.emerald[50]+"80":T.rose[50]+"80" }}>
-                  <div style={{ width:32, height:32, borderRadius:8, background:ok?T.emerald[50]:T.rose[50], display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <Ic n={ok?"check":"x"} s={15} c={ok?T.emerald[500]:T.rose[500]} sw={2.5}/>
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, fontSize:13, color:T.slate[800] }}>{task?.nome || "Tarefa removida"}</div>
-                    <div style={{ fontSize:11, color:T.slate[400], marginTop:2, display:"flex", gap:6, flexWrap:"wrap" }}>
-                      {cc && <Chip color={cc.text} bg={cc.bg}>{task.categoria}</Chip>}
-                      <span>{fmtDate(e.date)} às {fmtTime(e.timestamp)}</span>
-                    </div>
-                    {e.observacao && <p style={{ fontSize:11, color:T.slate[500], marginTop:4, fontStyle:"italic" }}>"{e.observacao}"</p>}
-                  </div>
-                  {e.photo && (
-                    <button onClick={() => setPhotoModal(e.photo)} style={{ background:T.sky[50], border:`1px solid ${T.sky[200]}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:11, color:T.sky[600], fontWeight:700, display:"flex", alignItems:"center", gap:5, fontFamily:"inherit", flexShrink:0 }}>
-                      <Ic n="photo" s={12} c={T.sky[500]}/>Foto
-                    </button>
-                  )}
-                  <Chip color={ok?T.emerald[600]:T.rose[600]} bg={ok?T.emerald[50]:T.rose[50]}>{ok?"✓ Concluída":"✗ Não concluída"}</Chip>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <ColabDetail
+          colab={selected}
+          tasks={tasks}
+          executions={executions}
+          bonusRules={bonusRules}
+          pontosExtras={pontosExtras}
+          onClose={() => setSelected(null)}
+        />
       )}
-
-      <Modal open={!!photoModal} onClose={() => setPhotoModal(null)} title="Evidência Fotográfica">
-        {photoModal && <img src={photoModal} alt="Evidência" style={{ width:"100%", borderRadius:12, maxHeight:420, objectFit:"contain" }}/>}
-      </Modal>
     </Page>
   );
 }
