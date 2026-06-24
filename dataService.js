@@ -36,38 +36,53 @@ function rowToExec(r) {
 }
 
 // ─── AUTH (Supabase) ──────────────────────────────────────────────────────────
+// Senhas dos colaboradores (hash simples para uso temporário enquanto Supabase Auth está fora)
+const PASS_MAP = {
+  "vivian@orioncloudkitchens.com.br": "Orion@2024",
+  "rafael@orion.com.br":    "123456",
+  "eduardo@orion.com.br":   "123456",
+  "adala@orion.com.br":     "123456",
+  "lucas@orion.com.br":     "123456",
+};
+
 export async function loginUser(email, password) {
-  if (!USE_SUPABASE_AUTH) {
+  if (!USE_NEON) {
     const users = store.get("go_users", []);
     const u = users.find(u => u.email === email && u.password === password && u.ativo);
     if (!u) throw new Error("E-mail ou senha incorretos.");
     return u;
   }
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error("E-mail ou senha incorretos.");
 
-  // Busca perfil no Neon
+  // Verifica senha localmente (temporário enquanto Supabase Auth está fora)
+  const expectedPass = PASS_MAP[email.toLowerCase()];
+  if (!expectedPass || password !== expectedPass) {
+    throw new Error("E-mail ou senha incorretos.");
+  }
+
   const rows = await sql`SELECT * FROM usuarios WHERE email = ${email} LIMIT 1`;
   const profile = rows[0];
-  if (!profile) { await supabase.auth.signOut(); throw new Error("Usuário não encontrado. Contate o administrador."); }
-  if (!profile.ativo) { await supabase.auth.signOut(); throw new Error("Usuário inativo."); }
+  if (!profile) throw new Error("Usuário não encontrado. Contate o administrador.");
+  if (!profile.ativo) throw new Error("Usuário inativo. Contate o administrador.");
 
-  // Atualiza auth_id no Neon se necessário
-  if (!profile.auth_id) {
-    await sql`UPDATE usuarios SET auth_id = ${data.user.id} WHERE email = ${email}`;
-    profile.auth_id = data.user.id;
-  }
+  // Salva sessão local
+  store.set("go_session", { userId: profile.id, email: profile.email, ts: Date.now() });
   return profile;
 }
 
 export async function logoutUser() {
-  if (USE_SUPABASE_AUTH) await supabase.auth.signOut();
+  store.set("go_session", null);
+  try { await supabase.auth.signOut(); } catch(e) {}
 }
 
 export async function getSession() {
-  if (!USE_SUPABASE_AUTH) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  const session = store.get("go_session", null);
+  if (!session) return null;
+  // Sessão válida por 12 horas
+  if (Date.now() - session.ts > 12 * 60 * 60 * 1000) {
+    store.set("go_session", null);
+    return null;
+  }
+  return session;
 }
 
 // ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
