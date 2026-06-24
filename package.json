@@ -2,11 +2,12 @@
   "name": "gestao-operacional",
   "version": "1.0.0",
   "private": true,
-  "description": "Sistema de Gestão Operacional e Desempenho de Colaboradores",
+  "description": "Sistema de Gest\u00e3o Operacional e Desempenho de Colaboradores",
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@supabase/supabase-js": "^2.45.4"
+    "@supabase/supabase-js": "^2.45.4",
+    "@neondatabase/serverless": "^0.10.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
