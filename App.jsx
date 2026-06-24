@@ -6,6 +6,7 @@ import { ToastContainer }  from "./UI.jsx";
 import { useToast }        from "./useToast.js";
 import { BONUS_RULES }     from "./tokens.js";
 import { initStorage, store as localStore } from "./helpers.js";
+const store_logout = () => localStore.set("go_session", null);
 import {
   loginUser, logoutUser,
   fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
@@ -104,20 +105,20 @@ export default function App() {
 
     const init = async () => {
       try {
-        // Deixa o SDK do Supabase restaurar a sessão do localStorage
-        const { data: { session } } = await supabase.auth.getSession();
+        // Verifica sessão local (funciona mesmo sem Supabase Auth)
+        const session = await getSession();
 
         if (session) {
-          const { data: profile } = await supabase
-            .from("usuarios")
-            .select("*")
-            .eq("auth_id", session.user.id)
-            .maybeSingle();
+          // Busca perfil no Neon
+          const users = await fetchUsers();
+          const profile = users.find(u => u.email === session.email);
 
           if (profile && profile.ativo) {
             setUser(profile);
             setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
             await loadAll();
+          } else {
+            store_logout();
           }
         }
       } catch(e) {
@@ -230,6 +231,7 @@ export default function App() {
   }, [toast]);
 
   if (isReset) return <><GlobalStyles /><ResetPassword onDone={() => { setIsReset(false); window.location.hash = ""; }} /></>;
+  if (window.location.hash === "#migrar") return <><GlobalStyles /><MigracaoPage /></>;
   if (loading) return <><GlobalStyles /><Loading /></>;
   if (!user)   return <><GlobalStyles /><Login onLogin={login} /></>;
 
