@@ -36,39 +36,37 @@ function rowToExec(r) {
 }
 
 // ─── AUTH (Supabase) ──────────────────────────────────────────────────────────
-// Senhas dos colaboradores (hash simples para uso temporário enquanto Supabase Auth está fora)
-const PASS_MAP = {
-  "vivian@orioncloudkitchens.com.br": "Orion@2024",
-  "rafael@orion.com.br":    "123456",
-  "eduardo@orion.com.br":   "123456",
-  "adala@orion.com.br":     "123456",
-  "lucas@orion.com.br":     "123456",
-};
+// Usuários hardcoded como fallback enquanto Supabase Auth está fora
+const LOCAL_USERS = [
+  { id:"u-vivian",  email:"vivian@orioncloudkitchens.com.br", pass:"Orion@2024", name:"Vivian",   role:"admin",       nivel:"admin",      cargo:"Gestão e Tecnologia",  setor:"Gestão",      avatar:"VI", ativo:true, elegivel_bonus:true },
+  { id:"u-rafael",  email:"rafael@orion.com.br",              pass:"123456",     name:"Rafael",   role:"colaborador", nivel:"supervisor",  cargo:"Supervisor",           setor:"Operacional", avatar:"RA", ativo:true, elegivel_bonus:true },
+  { id:"u-eduardo", email:"eduardo@orion.com.br",             pass:"123456",     name:"Eduardo",  role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"ED", ativo:true, elegivel_bonus:true },
+  { id:"u-adala",   email:"adala@orion.com.br",               pass:"123456",     name:"Ádala",    role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"AD", ativo:true, elegivel_bonus:true },
+  { id:"u-lucas",   email:"lucas@orion.com.br",               pass:"123456",     name:"Lucas",    role:"colaborador", nivel:"operador",    cargo:"Auxiliar Operacional", setor:"Operacional", avatar:"LU", ativo:true, elegivel_bonus:true },
+];
 
 export async function loginUser(email, password) {
-  if (!USE_NEON) {
-    const users = store.get("go_users", []);
-    const u = users.find(u => u.email === email && u.password === password && u.ativo);
-    if (!u) throw new Error("E-mail ou senha incorretos.");
-    return u;
-  }
+  const emailNorm = (email || "").toLowerCase().trim();
+  const passNorm  = (password || "").trim();
 
-  // Verifica senha localmente (temporário enquanto Supabase Auth está fora)
-  const expectedPass = PASS_MAP[email.toLowerCase().trim()];
-  if (!expectedPass || password.trim() !== expectedPass) {
-    // Tenta senha padrão 123456 para qualquer colaborador cadastrado
-    const rows2 = await sql`SELECT * FROM usuarios WHERE email = ${email.toLowerCase().trim()} LIMIT 1`;
-    if (!rows2[0] || password.trim() !== "123456") {
-      throw new Error("E-mail ou senha incorretos.");
+  // Verifica credenciais locais primeiro (não depende de rede)
+  const localUser = LOCAL_USERS.find(u => u.email === emailNorm && u.pass === passNorm);
+  if (!localUser) throw new Error("E-mail ou senha incorretos.");
+
+  // Busca perfil atualizado no Neon (se disponível)
+  let profile = { ...localUser };
+  if (USE_NEON) {
+    try {
+      const rows = await sql`SELECT * FROM usuarios WHERE email = ${emailNorm} LIMIT 1`;
+      if (rows[0]) profile = rows[0];
+    } catch(e) {
+      console.warn("[login] Neon indisponível, usando dados locais:", e.message);
     }
   }
 
-  const rows = await sql`SELECT * FROM usuarios WHERE email = ${email} LIMIT 1`;
-  const profile = rows[0];
-  if (!profile) throw new Error("Usuário não encontrado. Contate o administrador.");
   if (!profile.ativo) throw new Error("Usuário inativo. Contate o administrador.");
 
-  // Salva sessão no localStorage diretamente (mais compatível com Safari iOS)
+  // Salva sessão
   try {
     localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, ts: Date.now() }));
   } catch(e) {}
