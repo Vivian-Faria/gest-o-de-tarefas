@@ -54,9 +54,13 @@ export async function loginUser(email, password) {
   }
 
   // Verifica senha localmente (temporário enquanto Supabase Auth está fora)
-  const expectedPass = PASS_MAP[email.toLowerCase()];
-  if (!expectedPass || password !== expectedPass) {
-    throw new Error("E-mail ou senha incorretos.");
+  const expectedPass = PASS_MAP[email.toLowerCase().trim()];
+  if (!expectedPass || password.trim() !== expectedPass) {
+    // Tenta senha padrão 123456 para qualquer colaborador cadastrado
+    const rows2 = await sql`SELECT * FROM usuarios WHERE email = ${email.toLowerCase().trim()} LIMIT 1`;
+    if (!rows2[0] || password.trim() !== "123456") {
+      throw new Error("E-mail ou senha incorretos.");
+    }
   }
 
   const rows = await sql`SELECT * FROM usuarios WHERE email = ${email} LIMIT 1`;
@@ -64,25 +68,32 @@ export async function loginUser(email, password) {
   if (!profile) throw new Error("Usuário não encontrado. Contate o administrador.");
   if (!profile.ativo) throw new Error("Usuário inativo. Contate o administrador.");
 
-  // Salva sessão local
-  store.set("go_session", { userId: profile.id, email: profile.email, ts: Date.now() });
+  // Salva sessão no localStorage diretamente (mais compatível com Safari iOS)
+  try {
+    localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, ts: Date.now() }));
+  } catch(e) {}
   return profile;
 }
 
 export async function logoutUser() {
-  store.set("go_session", null);
+  try { localStorage.removeItem("go_session"); } catch(e) {}
   try { await supabase.auth.signOut(); } catch(e) {}
 }
 
 export async function getSession() {
-  const session = store.get("go_session", null);
-  if (!session) return null;
-  // Sessão válida por 12 horas
-  if (Date.now() - session.ts > 12 * 60 * 60 * 1000) {
-    store.set("go_session", null);
+  try {
+    const raw = localStorage.getItem("go_session");
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    // Sessão válida por 12 horas
+    if (Date.now() - session.ts > 12 * 60 * 60 * 1000) {
+      localStorage.removeItem("go_session");
+      return null;
+    }
+    return session;
+  } catch(e) {
     return null;
   }
-  return session;
 }
 
 // ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
