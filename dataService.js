@@ -38,7 +38,7 @@ function rowToExec(r) {
 // ─── AUTH (Supabase) ──────────────────────────────────────────────────────────
 // Usuários hardcoded como fallback enquanto Supabase Auth está fora
 const LOCAL_USERS = [
-  { id:"u-vivian",  email:"vivian@orioncloudkitchens.com.br", pass:"Orion@2024", name:"Vivian",   role:"admin",       nivel:"admin",      cargo:"Gestão e Tecnologia",  setor:"Gestão",      avatar:"VI", ativo:true, elegivel_bonus:true },
+  { id:"u-vivian",  email:"vivian@orioncloudkitchens.com.br", pass:"75807375Vi", name:"Vivian",   role:"admin",       nivel:"admin",      cargo:"Gestão e Tecnologia",  setor:"Gestão",      avatar:"VI", ativo:true, elegivel_bonus:true },
   { id:"u-rafael",  email:"rafael@orion.com.br",              pass:"123456",     name:"Rafael",   role:"colaborador", nivel:"supervisor",  cargo:"Supervisor",           setor:"Operacional", avatar:"RA", ativo:true, elegivel_bonus:true },
   { id:"u-eduardo", email:"eduardo@orion.com.br",             pass:"123456",     name:"Eduardo",  role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"ED", ativo:true, elegivel_bonus:true },
   { id:"u-adala",   email:"adala@orion.com.br",               pass:"123456",     name:"Ádala",    role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"AD", ativo:true, elegivel_bonus:true },
