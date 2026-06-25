@@ -117,6 +117,8 @@ export default function App() {
             setUser(profile);
             setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
             await loadAll();
+            // Limpa fotos com mais de 15 dias em background
+            limparFotosAntigas().catch(() => {});
           } else {
             store_logout();
           }

@@ -39,22 +39,35 @@ export function MinhasTarefas({ user, tasks, executions, setExecutions, toast })
   const submit = async () => {
     if (execModal?.fotoObrigatoria && !form.photo) { toast("Esta tarefa exige uma foto de evidência", "error"); return; }
     setSaving(true);
-    const exec = {
-      id:         "e" + Date.now(),
-      taskId:     execModal.id,
-      userId:     user.id,
-      date:       todayStr(),
-      timestamp:  new Date().toISOString(),
-      status:     form.status,
-      observacao: form.observacao,
-      photo:      form.photo,
-    };
-    const upd = [...executions, exec];
-    // Passa exec como segundo argumento para salvar no Supabase
-    await setExecutions(upd, exec);
-    setExecModal(null);
-    setSaving(false);
-    toast(form.status === "concluida" ? "Tarefa concluída com sucesso! 🎉" : "Tarefa registrada como não concluída");
+    try {
+      const execId = "e" + Date.now();
+
+      // Upload foto para Storage (não salva base64 no banco)
+      let photoUrl = null;
+      if (form.photo) {
+        photoUrl = await uploadFoto(form.photo, execId);
+        if (!photoUrl) toast("Foto não pôde ser enviada, mas execução será salva", "warning");
+      }
+
+      const exec = {
+        id:         execId,
+        taskId:     execModal.id,
+        userId:     user.id,
+        date:       todayStr(),
+        timestamp:  new Date().toISOString(),
+        status:     form.status,
+        observacao: form.observacao,
+        photo:      photoUrl, // URL do Storage, não base64
+      };
+      const upd = [...executions, exec];
+      await setExecutions(upd, exec);
+      setExecModal(null);
+      toast(form.status === "concluida" ? "Tarefa concluída com sucesso! 🎉" : "Tarefa registrada como não concluída");
+    } catch(e) {
+      toast("Erro ao salvar: " + e.message, "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const motivational = pct >= 90 ? "🏆 Desempenho excelente!" : pct >= 70 ? "⚡ Continue assim!" : pct > 0 ? "💪 Você está indo bem!" : "👋 Comece suas tarefas!";
