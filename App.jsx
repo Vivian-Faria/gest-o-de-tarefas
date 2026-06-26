@@ -9,7 +9,7 @@ import { initStorage, store as localStore } from "./helpers.js";
 const store_logout = () => localStore.set("go_session", null);
 import {
   loginUser, logoutUser, getSession,
-  fetchUsers, fetchTasks, deleteUser,, fetchExecucoes, fetchBonusRules,
+  fetchUsers, fetchTasks, deleteUser, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
   fetchPontosExtras, insertPontosExtras, deletePontosExtras,
   fetchExtraRules, saveExtraRules, DEFAULT_EXTRA_RULES,
