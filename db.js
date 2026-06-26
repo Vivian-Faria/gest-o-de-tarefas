@@ -1,17 +1,27 @@
-// Cliente Neon via HTTP — funciona no browser
-import { neon } from "@neondatabase/serverless";
+// Cliente de banco via Netlify Function (evita CORS do Neon no browser)
+export default async function sql(strings, ...values) {
+  // Monta a query com placeholders $1, $2...
+  let query = "";
+  const params = [];
+  strings.forEach((str, i) => {
+    query += str;
+    if (i < values.length) {
+      params.push(values[i]);
+      query += `$${params.length}`;
+    }
+  });
 
-let _sql = null;
+  const res = await fetch("/.netlify/functions/db", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, params }),
+  });
 
-function getSQL() {
-  if (!_sql) {
-    const url = import.meta.env.VITE_NEON_URL;
-    if (!url) throw new Error("VITE_NEON_URL não configurada");
-    _sql = neon(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `DB error ${res.status}`);
   }
-  return _sql;
-}
 
-export default function sql(strings, ...values) {
-  return getSQL()(strings, ...values);
+  const data = await res.json();
+  return data.rows ?? [];
 }
