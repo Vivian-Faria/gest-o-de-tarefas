@@ -194,11 +194,12 @@ export default function App() {
     setTasks(updated);
     if (taskToSave) {
       try {
+        console.log("[handleSetTasks] salvando:", taskToSave.id, taskToSave.nome);
         await upsertTask(taskToSave);
+        console.log("[handleSetTasks] salvo com sucesso!");
       } catch(e) {
-        console.error("upsertTask error:", e);
+        console.error("[handleSetTasks] ERRO:", e?.message, e);
         toast("Erro ao salvar tarefa: " + (e?.message ?? e), "error");
-        // Recarrega do banco para não ficar com estado inconsistente
         fetchTasks().then(t => setTasks(t)).catch(()=>{});
       }
     }
