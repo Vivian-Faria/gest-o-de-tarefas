@@ -9,7 +9,7 @@ import { initStorage, store as localStore } from "./helpers.js";
 const store_logout = () => localStore.set("go_session", null);
 import {
   loginUser, logoutUser, getSession,
-  fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
+  fetchUsers, fetchTasks, deleteUser,, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
   fetchPontosExtras, insertPontosExtras, deletePontosExtras,
   fetchExtraRules, saveExtraRules, DEFAULT_EXTRA_RULES,
@@ -259,6 +259,15 @@ export default function App() {
     setTasks:      (upd, toSave) => handleSetTasks(upd, toSave),
     setExecutions: (upd, toSave) => handleSetExecutions(upd, toSave),
     setBonusRules: handleSetBonusRules,
+    removeUser: async (id) => {
+      try {
+        await deleteUser(id);
+        setUsers(prev => prev.filter(u => u.id !== id));
+        toast("Colaborador removido");
+      } catch(e) {
+        toast("Erro ao remover: " + e.message, "error");
+      }
+    },
     pontosExtras,
     addPontosExtras: handleAddPontosExtras,
     removePontosExtras: async (id) => {

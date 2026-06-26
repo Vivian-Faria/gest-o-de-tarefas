@@ -7,7 +7,7 @@ import { HistoricoDashboard } from "./HistoricoDashboard.jsx";
 import { Avatar, Chip, ProgressRing, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
-export function Colaboradores({ users, setUsers, toast, tasks, executions, pontosExtras }) {
+export function Colaboradores({ users, setUsers, toast, tasks, executions, pontosExtras, removeUser }) {
   const blank = { name:"", email:"", password:"", cargo:"", setor:"", nivel:"operador", role:"colaborador", ativo:true, elegivel_bonus:true };
   const [modal, setModal]         = useState(false);
   const [editing, setEditing]     = useState(null);

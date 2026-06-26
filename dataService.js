@@ -119,6 +119,15 @@ export async function upsertUser(user) {
   return user;
 }
 
+export async function deleteUser(id) {
+  if (!USE_NEON) {
+    store.set("go_users", store.get("go_users", []).filter(u => u.id !== id));
+    return true;
+  }
+  await sql`DELETE FROM usuarios WHERE id = ${id}`;
+  return true;
+}
+
 // ─── TAREFAS ──────────────────────────────────────────────────────────────────
 export async function fetchTasks() {
   if (!USE_NEON) return store.get("go_tasks", []);
