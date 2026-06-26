@@ -1,16 +1,9 @@
-const { createClient } = require("@supabase/supabase-js");
+const { neon } = require("@neondatabase/serverless");
 
 exports.handler = async (event) => {
-  // Só aceita POST
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
-
-  // Usa a service_role key — segura pois roda no servidor, nunca no browser
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
 
   let body;
   try {
@@ -19,60 +12,41 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid JSON" }) };
   }
 
-  const { name, email, password, cargo, setor, nivel, role, avatar, ativo } = body;
+  const { name, email, cargo, setor, nivel, role, avatar, ativo, elegivel_bonus } = body;
 
-  if (!name || !email || !password) {
-    return { statusCode: 400, body: JSON.stringify({ error: "name, email e password são obrigatórios" }) };
+  if (!name || !email) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Nome e e-mail são obrigatórios" }) };
   }
 
   try {
-    // 1. Cria o usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // confirma automaticamente, sem precisar de e-mail
-    });
+    const sql = neon(process.env.NEON_URL);
 
-    if (authError) {
-      return { statusCode: 400, body: JSON.stringify({ error: authError.message }) };
+    // Verifica se já existe
+    const existing = await sql`SELECT id FROM usuarios WHERE email = ${email} LIMIT 1`;
+    if (existing.length > 0) {
+      return { statusCode: 400, body: JSON.stringify({ error: "E-mail já cadastrado" }) };
     }
 
-    const authId = authData.user.id;
-
-    // 2. Gera ID do perfil
-    const profileId = "u-" + name
+    // Gera ID
+    const id = "u-" + name
       .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "")
       .slice(0, 8) + "-" + Date.now().toString().slice(-4);
 
-    // 3. Insere perfil na tabela usuarios
-    const { data: profileData, error: profileError } = await supabase
-      .from("usuarios")
-      .insert({
-        id:      profileId,
-        auth_id: authId,
-        name,
-        email,
-        cargo:   cargo   || "",
-        setor:   setor   || "Operacional",
-        nivel:   nivel   || "operador",
-        role:    role    || "colaborador",
-        avatar:  avatar  || name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase(),
-        ativo:   ativo !== false,
-      })
-      .select()
-      .single();
+    const avatarStr = avatar || name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-    if (profileError) {
-      // Se falhou ao criar o perfil, deleta o auth user para não ficar órfão
-      await supabase.auth.admin.deleteUser(authId);
-      return { statusCode: 500, body: JSON.stringify({ error: profileError.message }) };
-    }
+    const result = await sql`
+      INSERT INTO usuarios (id, auth_id, name, email, cargo, setor, nivel, role, avatar, ativo, elegivel_bonus)
+      VALUES (${id}, null, ${name}, ${email}, ${cargo||""}, ${setor||"Operacional"}, 
+              ${nivel||"operador"}, ${role||"colaborador"}, ${avatarStr}, 
+              ${ativo !== false}, ${elegivel_bonus !== false})
+      RETURNING *
+    `;
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ user: profileData }),
+      body: JSON.stringify({ user: result[0] }),
     };
 
   } catch (err) {
