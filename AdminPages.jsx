@@ -46,37 +46,25 @@ export function Colaboradores({ users, setUsers, toast, tasks, executions, ponto
     }
 
     try {
-      const res = await fetch("/.netlify/functions/create-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name:     form.name,
-          email:    form.email,
-          password: form.password || "123456",
-          cargo:    form.cargo,
-          setor:    form.setor,
-          nivel:    form.nivel || "operador",
-          role:     form.role  || "colaborador",
-          avatar:   initials(form.name),
-          ativo:    form.ativo,
-        }),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast("Erro: " + (json.error || "Falha ao criar colaborador"), "error");
-        setSaving(false);
-        return;
-      }
-
-      const newUser = json.user;
+      const newUser = {
+        id:            "u-" + form.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "").slice(0,8) + "-" + Date.now().toString().slice(-4),
+        auth_id:       null,
+        name:          form.name,
+        email:         form.email,
+        cargo:         form.cargo || "",
+        setor:         form.setor || "Operacional",
+        nivel:         form.nivel || "operador",
+        role:          form.role  || "colaborador",
+        avatar:        initials(form.name),
+        ativo:         form.ativo !== false,
+        elegivel_bonus: form.elegivel_bonus !== false,
+      };
       const upd = [...users, newUser];
-      setUsers(upd, null); // já foi salvo pela function, não precisa chamar upsertUser
+      setUsers(upd, newUser);
       toast("Colaborador cadastrado com sucesso!");
       setModal(false);
     } catch(e) {
-      toast("Erro ao conectar: " + e.message, "error");
+      toast("Erro: " + e.message, "error");
     } finally {
       setSaving(false);
     }
