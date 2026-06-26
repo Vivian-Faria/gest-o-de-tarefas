@@ -104,6 +104,11 @@ export function Colaboradores({ users, setUsers, toast, tasks, executions, ponto
             <div style={{ display:"flex", gap:8, borderTop:`1px solid ${T.slate[100]}`, paddingTop:14 }}>
               <Btn size="sm" variant="secondary" onClick={() => openEdit(u)} icon="edit">Editar</Btn>
               <Btn size="sm" variant={u.ativo?"danger":"success"} onClick={() => toggle(u.id)}>{u.ativo?"Desativar":"Ativar"}</Btn>
+              <Btn size="sm" variant="danger" icon="x" onClick={() => {
+                if (window.confirm(`Excluir ${u.name} permanentemente? Esta ação não pode ser desfeita.`)) {
+                  removeUser(u.id);
+                }
+              }}>Excluir</Btn>
             </div>
           </div>
         ))}
