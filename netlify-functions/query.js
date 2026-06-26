@@ -8,9 +8,9 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.VITE_NEON_URL;
+  const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.NEON_URL || process.env.VITE_NEON_URL;
   if (!DATABASE_URL) {
-    return res.status(500).json({ error: "NEON_DATABASE_URL nao configurada nas variaveis de ambiente da Netlify." });
+    return res.status(500).json({ error: "Variavel de banco nao configurada. Adicione NEON_URL nas variaveis de ambiente da Netlify." });
   }
 
   let body = req.body;
