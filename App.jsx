@@ -110,31 +110,37 @@ export default function App() {
 
         if (session) {
           // Usa perfil salvo na sessão — sem precisar de fetch no Neon
-          const profile = session.profile || null;
+          let profile = session.profile || null;
 
-          if (profile && profile.ativo) {
+          // Se não tem perfil na sessão, tenta buscar no Neon
+          if (!profile && session.email) {
+            try {
+              const users = await fetchUsers();
+              profile = users.find(u => u.email === session.email) || null;
+            } catch(e) {
+              console.warn("[init] fetch profile failed, using LOCAL_USERS fallback");
+            }
+          }
+
+          // Último fallback — usa dados locais hardcoded
+          if (!profile && session.email) {
+            const LOCAL = [
+              { id:"u-vivian",  email:"vivian@orioncloudkitchens.com.br", name:"Vivian",  role:"admin",       nivel:"admin",      cargo:"Gestão",      setor:"Gestão",      avatar:"VI", ativo:true, elegivel_bonus:true },
+              { id:"u-rafael",  email:"rafael@orion.com.br",              name:"Rafael",  role:"colaborador", nivel:"supervisor", cargo:"Supervisor",  setor:"Operacional", avatar:"RA", ativo:true, elegivel_bonus:true },
+              { id:"u-eduardo", email:"eduardo@orion.com.br",             name:"Eduardo", role:"colaborador", nivel:"lider",      cargo:"Líder",       setor:"Operacional", avatar:"ED", ativo:true, elegivel_bonus:true },
+              { id:"u-adala",   email:"adala@orion.com.br",               name:"Ádala",   role:"colaborador", nivel:"lider",      cargo:"Líder",       setor:"Operacional", avatar:"AD", ativo:true, elegivel_bonus:true },
+              { id:"u-lucas",   email:"lucas@orion.com.br",               name:"Lucas",   role:"colaborador", nivel:"operador",   cargo:"Operador",    setor:"Operacional", avatar:"LU", ativo:true, elegivel_bonus:true },
+            ];
+            profile = LOCAL.find(u => u.email === session.email) || null;
+          }
+
+          if (profile) {
             setUser(profile);
             setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
             await loadAll();
             limparFotosAntigas().catch(() => {});
-          } else if (session.email) {
-            // Fallback: busca no Neon se não tem perfil na sessão
-            try {
-              const users = await fetchUsers();
-              const found = users.find(u => u.email === session.email);
-              if (found && found.ativo) {
-                setUser(found);
-                setActive(found.role === "admin" ? "dashboard" : "minhas-tarefas");
-                await loadAll();
-              } else {
-                store_logout();
-              }
-            } catch(e) {
-              console.warn("[init] fallback fetch failed:", e.message);
-            }
-          } else {
-            store_logout();
           }
+          // Nunca chama store_logout() aqui — se falhou é problema de rede, não de sessão
         }
       } catch(e) {
         console.warn("[init] error:", e.message);
