@@ -17,6 +17,7 @@ import {
   USE_SUPABASE,
 } from "./dataService.js";
 import { supabase } from "./supabase.js";
+import { limparFotosAntigas } from "./storage.js";
 
 import { Login }           from "./Login.jsx";
 import { AdminDashboard }  from "./AdminDashboard.jsx";
