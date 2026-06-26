@@ -66,9 +66,9 @@ export async function loginUser(email, password) {
 
   if (!profile.ativo) throw new Error("Usuário inativo. Contate o administrador.");
 
-  // Salva sessão
+  // Salva sessão completa (inclui perfil para restaurar sem fetch)
   try {
-    localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, ts: Date.now() }));
+    localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, profile, ts: Date.now() }));
   } catch(e) {}
   return profile;
 }
@@ -83,8 +83,8 @@ export async function getSession() {
     const raw = localStorage.getItem("go_session");
     if (!raw) return null;
     const session = JSON.parse(raw);
-    // Sessão válida por 12 horas
-    if (Date.now() - session.ts > 12 * 60 * 60 * 1000) {
+    // Sessão válida por 8 horas
+    if (Date.now() - session.ts > 8 * 60 * 60 * 1000) {
       localStorage.removeItem("go_session");
       return null;
     }

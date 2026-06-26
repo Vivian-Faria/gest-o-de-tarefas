@@ -109,16 +109,29 @@ export default function App() {
         const session = await getSession();
 
         if (session) {
-          // Busca perfil no Neon
-          const users = await fetchUsers();
-          const profile = users.find(u => u.email === session.email);
+          // Usa perfil salvo na sessão — sem precisar de fetch no Neon
+          const profile = session.profile || null;
 
           if (profile && profile.ativo) {
             setUser(profile);
             setActive(profile.role === "admin" ? "dashboard" : "minhas-tarefas");
             await loadAll();
-            // Limpa fotos com mais de 15 dias em background
             limparFotosAntigas().catch(() => {});
+          } else if (session.email) {
+            // Fallback: busca no Neon se não tem perfil na sessão
+            try {
+              const users = await fetchUsers();
+              const found = users.find(u => u.email === session.email);
+              if (found && found.ativo) {
+                setUser(found);
+                setActive(found.role === "admin" ? "dashboard" : "minhas-tarefas");
+                await loadAll();
+              } else {
+                store_logout();
+              }
+            } catch(e) {
+              console.warn("[init] fallback fetch failed:", e.message);
+            }
           } else {
             store_logout();
           }
@@ -133,16 +146,7 @@ export default function App() {
 
     init();
 
-    // Monitora logout e token refresh
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[auth] event:", event);
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        setActive(null);
-      }
-    });
-
-    return () => { subscription?.unsubscribe(); clearTimeout(safetyTimer); };
+    return () => { clearTimeout(safetyTimer); };
   }, [loadAll]);
 
   // ─── AUTH ───────────────────────────────────────────────────
