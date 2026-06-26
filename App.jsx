@@ -8,7 +8,7 @@ import { BONUS_RULES }     from "./tokens.js";
 import { initStorage, store as localStore } from "./helpers.js";
 const store_logout = () => localStore.set("go_session", null);
 import {
-  loginUser, logoutUser,
+  loginUser, logoutUser, getSession,
   fetchUsers, fetchTasks, fetchExecucoes, fetchBonusRules,
   upsertUser, upsertTask, insertExecucao, saveBonusRules,
   fetchPontosExtras, insertPontosExtras, deletePontosExtras,
