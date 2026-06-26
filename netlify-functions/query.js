@@ -1,26 +1,31 @@
-// Cliente de banco via Netlify Function
-export default async function sql(strings, ...values) {
-  let query = "";
-  const params = [];
-  strings.forEach((str, i) => {
-    query += str;
-    if (i < values.length) {
-      params.push(values[i] === undefined ? null : values[i]);
-      query += `$${params.length}`;
-    }
-  });
+import { neon } from "@neondatabase/serverless";
 
-  const res = await fetch("/.netlify/functions/query", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, params }),
-  });
+export const config = { type: "esm" };
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `DB error ${res.status}`);
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.VITE_NEON_URL;
+  if (!DATABASE_URL) {
+    return res.status(500).json({ error: "NEON_DATABASE_URL nao configurada nas variaveis de ambiente da Netlify." });
   }
 
-  const data = await res.json();
-  return data.rows ?? [];
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "Body invalido" }); }
+  }
+  const { query, params = [] } = body || {};
+  if (!query) return res.status(400).json({ error: "query ausente" });
+
+  try {
+    const sql = neon(DATABASE_URL);
+    const rows = await sql(query, params);
+    return res.status(200).json({ rows: Array.isArray(rows) ? rows : [] });
+  } catch (err) {
+    console.error("[query] erro:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
 }
