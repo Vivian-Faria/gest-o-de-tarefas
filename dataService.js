@@ -15,7 +15,6 @@ function handleError(label, error) {
   throw new Error(error?.message ?? error);
 }
 
-// ─── CONVERSORES ──────────────────────────────────────────────────────────────
 function rowToTask(r) {
   return {
     id: r.id, nome: r.nome, descricao: r.descricao,
@@ -35,41 +34,51 @@ function rowToExec(r) {
   };
 }
 
-// ─── AUTH (Supabase) ──────────────────────────────────────────────────────────
-// Usuários hardcoded como fallback enquanto Supabase Auth está fora
+// AUTH
 const LOCAL_USERS = [
-  { id:"u-vivian",  email:"vivian@orioncloudkitchens.com.br", pass:"75807375Vi", name:"Vivian",   role:"admin",       nivel:"admin",      cargo:"Gestão e Tecnologia",  setor:"Gestão",      avatar:"VI", ativo:true, elegivel_bonus:true },
-  { id:"u-rafael",  email:"rafael@orion.com.br",              pass:"123456",     name:"Rafael",   role:"colaborador", nivel:"supervisor",  cargo:"Supervisor",           setor:"Operacional", avatar:"RA", ativo:true, elegivel_bonus:true },
-  { id:"u-eduardo", email:"eduardo@orion.com.br",             pass:"123456",     name:"Eduardo",  role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"ED", ativo:true, elegivel_bonus:true },
-  { id:"u-adala",   email:"adala@orion.com.br",               pass:"123456",     name:"Ádala",    role:"colaborador", nivel:"lider",       cargo:"Líder Operacional",    setor:"Operacional", avatar:"AD", ativo:true, elegivel_bonus:true },
-  { id:"u-lucas",   email:"lucas@orion.com.br",               pass:"123456",     name:"Lucas",    role:"colaborador", nivel:"operador",    cargo:"Auxiliar Operacional", setor:"Operacional", avatar:"LU", ativo:true, elegivel_bonus:true },
+  { id:"u-vivian", email:"vivian@orioncloudkitchens.com.br", pass:"75807375Vi", name:"Vivian", role:"admin", nivel:"admin", cargo:"Gestao e Tecnologia", setor:"Gestao", avatar:"VI", ativo:true, elegivel_bonus:true },
+  { id:"u-rafael", email:"rafael@orion.com.br", pass:"123456", name:"Rafael", role:"colaborador", nivel:"supervisor", cargo:"Supervisor", setor:"Operacional", avatar:"RA", ativo:true, elegivel_bonus:true },
+  { id:"u-eduardo", email:"eduardo@orion.com.br", pass:"123456", name:"Eduardo", role:"colaborador", nivel:"lider", cargo:"Lider Operacional", setor:"Operacional", avatar:"ED", ativo:true, elegivel_bonus:true },
+  { id:"u-adala", email:"adala@orion.com.br", pass:"123456", name:"Adala", role:"colaborador", nivel:"lider", cargo:"Lider Operacional", setor:"Operacional", avatar:"AD", ativo:true, elegivel_bonus:true },
+  { id:"u-lucas", email:"lucas@orion.com.br", pass:"123456", name:"Lucas", role:"colaborador", nivel:"operador", cargo:"Auxiliar Operacional", setor:"Operacional", avatar:"LU", ativo:true, elegivel_bonus:true },
 ];
 
 export async function loginUser(email, password) {
   const emailNorm = (email || "").toLowerCase().trim();
-  const passNorm  = (password || "").trim();
+  const passNorm = (password || "").trim();
 
-  // Verifica credenciais locais primeiro (não depende de rede)
+  // 1) Tenta credenciais locais (fallback offline)
   const localUser = LOCAL_USERS.find(u => u.email === emailNorm && u.pass === passNorm);
-  if (!localUser) throw new Error("E-mail ou senha incorretos.");
 
-  // Busca perfil atualizado no Neon (se disponível)
+  // 2) Se nao achou localmente, busca no banco Neon
+  if (!localUser) {
+    if (!USE_NEON) throw new Error("E-mail ou senha incorretos.");
+    try {
+      const rows = await sql`SELECT * FROM usuarios WHERE email = ${emailNorm} AND password = ${passNorm} LIMIT 1`;
+      if (!rows[0]) throw new Error("E-mail ou senha incorretos.");
+      const dbUser = rows[0];
+      if (!dbUser.ativo) throw new Error("Usuario inativo. Contate o administrador.");
+      try { localStorage.setItem("go_session", JSON.stringify({ userId: dbUser.id, email: dbUser.email, profile: dbUser, ts: Date.now() })); } catch(e) {}
+      return dbUser;
+    } catch(ex) {
+      if (ex.message === "E-mail ou senha incorretos." || ex.message === "Usuario inativo. Contate o administrador.") throw ex;
+      throw new Error("E-mail ou senha incorretos.");
+    }
+  }
+
+  // 3) Achou localmente — busca perfil atualizado no Neon (se disponivel)
   let profile = { ...localUser };
   if (USE_NEON) {
     try {
       const rows = await sql`SELECT * FROM usuarios WHERE email = ${emailNorm} LIMIT 1`;
       if (rows[0]) profile = rows[0];
     } catch(e) {
-      console.warn("[login] Neon indisponível, usando dados locais:", e.message);
+      console.warn("[login] Neon indisponivel, usando dados locais:", e.message);
     }
   }
 
-  if (!profile.ativo) throw new Error("Usuário inativo. Contate o administrador.");
-
-  // Salva sessão completa (inclui perfil para restaurar sem fetch)
-  try {
-    localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, profile, ts: Date.now() }));
-  } catch(e) {}
+  if (!profile.ativo) throw new Error("Usuario inativo. Contate o administrador.");
+  try { localStorage.setItem("go_session", JSON.stringify({ userId: profile.id, email: profile.email, profile, ts: Date.now() })); } catch(e) {}
   return profile;
 }
 
@@ -83,18 +92,15 @@ export async function getSession() {
     const raw = localStorage.getItem("go_session");
     if (!raw) return null;
     const session = JSON.parse(raw);
-    // Sessão válida por 8 horas
     if (Date.now() - session.ts > 8 * 60 * 60 * 1000) {
       localStorage.removeItem("go_session");
       return null;
     }
     return session;
-  } catch(e) {
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
-// ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
+// USUARIOS
 export async function fetchUsers() {
   if (!USE_NEON) return store.get("go_users", []);
   const rows = await sql`SELECT * FROM usuarios ORDER BY name`;
@@ -109,8 +115,8 @@ export async function upsertUser(user) {
   }
   const { id, auth_id, password, created_at, ...r } = user;
   await sql`
-    INSERT INTO usuarios (id, auth_id, name, email, role, cargo, setor, nivel, avatar, ativo, elegivel_bonus)
-    VALUES (${id}, ${auth_id || null}, ${r.name}, ${r.email}, ${r.role}, ${r.cargo}, ${r.setor}, ${r.nivel || 'operador'}, ${r.avatar}, ${r.ativo}, ${r.elegivel_bonus !== false})
+    INSERT INTO usuarios (id, auth_id, name, email, password, role, cargo, setor, nivel, avatar, ativo, elegivel_bonus)
+    VALUES (${id}, ${auth_id || null}, ${r.name}, ${r.email}, ${password || '123456'}, ${r.role}, ${r.cargo}, ${r.setor}, ${r.nivel || 'operador'}, ${r.avatar}, ${r.ativo}, ${r.elegivel_bonus !== false})
     ON CONFLICT (id) DO UPDATE SET
       name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role,
       cargo = EXCLUDED.cargo, setor = EXCLUDED.setor, nivel = EXCLUDED.nivel,
@@ -128,7 +134,7 @@ export async function deleteUser(id) {
   return true;
 }
 
-// ─── TAREFAS ──────────────────────────────────────────────────────────────────
+// TAREFAS
 export async function fetchTasks() {
   if (!USE_NEON) return store.get("go_tasks", []);
   const rows = await sql`SELECT * FROM tarefas ORDER BY horario`;
@@ -144,8 +150,8 @@ export async function upsertTask(task) {
   await sql`
     INSERT INTO tarefas (id, nome, descricao, categoria, horario, frequencia, tempo_estimado, peso, foto_obrigatoria, responsavel_id, ativo)
     VALUES (${task.id}, ${task.nome}, ${task.descricao || null}, ${task.categoria}, ${task.horario},
-            ${task.frequencia}, ${task.tempoEstimado}, ${task.peso}, ${task.fotoObrigatoria},
-            ${task.responsavelId || null}, ${task.ativo})
+    ${task.frequencia}, ${task.tempoEstimado}, ${task.peso}, ${task.fotoObrigatoria},
+    ${task.responsavelId || null}, ${task.ativo})
     ON CONFLICT (id) DO UPDATE SET
       nome = EXCLUDED.nome, descricao = EXCLUDED.descricao, categoria = EXCLUDED.categoria,
       horario = EXCLUDED.horario, frequencia = EXCLUDED.frequencia,
@@ -156,7 +162,7 @@ export async function upsertTask(task) {
   return task;
 }
 
-// ─── EXECUÇÕES ────────────────────────────────────────────────────────────────
+// EXECUCOES
 export async function fetchExecucoes() {
   if (!USE_NEON) return store.get("go_execs", []);
   const threeMonthsAgo = new Date();
@@ -185,12 +191,12 @@ export async function insertExecucao(exec) {
   await sql`
     INSERT INTO execucoes (id, task_id, user_id, date, timestamp, status, observacao, photo_url)
     VALUES (${exec.id}, ${exec.taskId}, ${exec.userId}, ${dateStr},
-            ${exec.timestamp}, ${exec.status}, ${exec.observacao || null}, ${exec.photo || null})
+    ${exec.timestamp}, ${exec.status}, ${exec.observacao || null}, ${exec.photo || null})
   `;
   return exec;
 }
 
-// ─── BÔNUS ────────────────────────────────────────────────────────────────────
+// BONUS
 export const DEFAULT_BONUS_RULES = [
   {min:90,max:100,valor:300},{min:80,max:89,valor:250},{min:70,max:79,valor:200},
   {min:60,max:69,valor:150},{min:50,max:59,valor:100},{min:0,max:49,valor:0}
@@ -211,7 +217,6 @@ export async function saveBonusRules(rules) {
   return rules;
 }
 
-// ─── EXTRA RULES ──────────────────────────────────────────────────────────────
 export const DEFAULT_EXTRA_RULES = [
   { pontos:5, valor:25 }, { pontos:10, valor:50 }, { pontos:15, valor:75 }
 ];
@@ -231,7 +236,7 @@ export async function saveExtraRules(rules) {
   return rules;
 }
 
-// ─── PONTOS EXTRAS ────────────────────────────────────────────────────────────
+// PONTOS EXTRAS
 export async function fetchPontosExtras() {
   if (!USE_NEON) return store.get("go_pontos", []);
   const rows = await sql`SELECT * FROM pontos_extras ORDER BY created_at DESC`;
@@ -243,7 +248,7 @@ export async function insertPontosExtras(entry) {
   await sql`
     INSERT INTO pontos_extras (id, user_id, given_by_id, pontos, justificativa, mes, created_at)
     VALUES (${entry.id}, ${entry.user_id}, ${entry.given_by_id}, ${entry.pontos},
-            ${entry.justificativa}, ${entry.mes}, ${entry.created_at})
+    ${entry.justificativa}, ${entry.mes}, ${entry.created_at})
   `;
   return entry;
 }
@@ -254,7 +259,7 @@ export async function deletePontosExtras(id) {
   return true;
 }
 
-// ─── ADVERTÊNCIAS ─────────────────────────────────────────────────────────────
+// ADVERTENCIAS
 export async function fetchAdvertencias() {
   if (!USE_NEON) return store.get("go_adv", []);
   const rows = await sql`SELECT * FROM advertencias ORDER BY created_at DESC`;
@@ -266,7 +271,7 @@ export async function insertAdvertencia(entry) {
   await sql`
     INSERT INTO advertencias (id, user_id, colaborador_nome, dado_por_id, motivo, descricao, penalidade, mes, created_at)
     VALUES (${entry.id}, ${entry.user_id||null}, ${entry.colaborador_nome}, ${entry.dado_por_id},
-            ${entry.motivo}, ${entry.descricao||null}, ${entry.penalidade}, ${entry.mes}, ${entry.created_at})
+    ${entry.motivo}, ${entry.descricao||null}, ${entry.penalidade}, ${entry.mes}, ${entry.created_at})
   `;
   return entry;
 }
