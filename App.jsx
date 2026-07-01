@@ -1,4 +1,4 @@
-{ useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { GlobalStyles }    from "./GlobalStyles.jsx";
 import { Sidebar }         from "./Sidebar.jsx";
 import { BottomNav }      from "./BottomNav.jsx";
