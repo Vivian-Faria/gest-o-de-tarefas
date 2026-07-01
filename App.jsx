@@ -1,4 +1,4 @@
-sem codigoimport { useState, useEffect, useCallback } from "react";
+{ useState, useEffect, useCallback } from "react";
 import { GlobalStyles }    from "./GlobalStyles.jsx";
 import { Sidebar }         from "./Sidebar.jsx";
 import { BottomNav }      from "./BottomNav.jsx";
