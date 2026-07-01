@@ -1,22 +1,30 @@
 import { neon } from "@neondatabase/serverless";
 
-export default async (req, context) => {
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "application/json",
-  };
+// Conexao criada fora do handler para ser reutilizada entre requests
+const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.NEON_URL || process.env.VITE_NEON_URL;
+const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Content-Type": "application/json",
+};
+
+export default async (req, context) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers });
+  }
+
+  // GET para health check / keep-alive
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   }
 
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
   }
 
-  const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.NEON_URL || process.env.VITE_NEON_URL;
-  if (!DATABASE_URL) {
+  if (!sql) {
     return new Response(JSON.stringify({ error: "NEON_URL nao configurada." }), { status: 500, headers });
   }
 
@@ -33,7 +41,6 @@ export default async (req, context) => {
   }
 
   try {
-    const sql = neon(DATABASE_URL);
     const rows = await sql(query, params);
     return new Response(JSON.stringify({ rows: Array.isArray(rows) ? rows : [] }), { status: 200, headers });
   } catch (err) {
