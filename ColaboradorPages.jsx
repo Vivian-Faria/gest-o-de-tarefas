@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { T, CAT_COLORS } from "./tokens.js";
+import { uploadFoto } from "./storage.js";
 import { store, todayStr, fmtDateLong, statusColor, calcPerf, getBonus, getLast7Days, monthLabel } from "./helpers.js";
 import { Ic } from "./Icon.jsx";
 import { Avatar, Chip, StatusChip, ProgressRing, StatCard, Page, Modal, Field, Btn, Empty } from "./UI.jsx";
